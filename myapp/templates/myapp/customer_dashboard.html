@@ -1,0 +1,136 @@
+{% extends 'myapp/erp_base.html' %}
+{% load static %}
+
+{% block title %}Customer Dashboard - FarmLink ERP{% endblock %}
+
+{% block erp_content %}
+<div class="container-fluid px-0">
+    <!-- Welcome Header Banner -->
+    <div class="glass-card p-4 p-md-5 mb-4 text-white" style="background: linear-gradient(135deg, #1b4332 0%, #2d6a4f 100%);">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <span class="badge bg-success bg-opacity-25 text-white border border-success rounded-pill px-3 py-2 mb-3">
+                    <i class="bi bi-cart-fill me-1"></i> Customer ERP Portal
+                </span>
+                <h2 class="fw-bold mb-2">Welcome Customer, {{ customer.full_name }}!</h2>
+                <p class="mb-0 text-white-50 lead fs-6">
+                    View your won marketplace produce, live bidding history, and account settings.
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                <a href="{% url 'explore_products' %}" class="btn btn-warning btn-lg shadow-sm rounded-pill fw-semibold px-4 text-dark me-2">
+                    <i class="bi bi-shop me-1"></i> Explore Marketplace
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Navigation Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="profile-card p-4 h-100 bg-white shadow-sm rounded-4 border-0">
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <div class="stat-icon green">
+                        <i class="bi bi-bag-check-fill"></i>
+                    </div>
+                    <div>
+                        <h6 class="text-muted small text-uppercase fw-bold mb-1">Won Products</h6>
+                        <h4 class="fw-bold text-success mb-0">{{ purchases.count }} Items</h4>
+                    </div>
+                </div>
+                <p class="text-muted small mb-0">Total products won in live bargaining.</p>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="profile-card p-4 h-100 bg-white shadow-sm rounded-4 border-0">
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <div class="stat-icon mint">
+                        <i class="bi bi-currency-rupee"></i>
+                    </div>
+                    <div>
+                        <h6 class="text-muted small text-uppercase fw-bold mb-1">Total Purchases</h6>
+                        <h4 class="fw-bold text-dark mb-0">₹{{ total_spent }}</h4>
+                    </div>
+                </div>
+                <p class="text-muted small mb-0">Combined value of accepted bids.</p>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="profile-card p-4 h-100 bg-white shadow-sm rounded-4 border-0">
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <div class="stat-icon accent">
+                        <i class="bi bi-person-badge-fill"></i>
+                    </div>
+                    <div>
+                        <h6 class="text-muted small text-uppercase fw-bold mb-1">Customer ID</h6>
+                        <h5 class="fw-bold text-dark mb-0">{{ customer.customer_id }}</h5>
+                    </div>
+                </div>
+                <p class="text-muted small mb-0">Member since {{ customer.joining_date|date:"d M Y" }}.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Purchased / Won Products Table -->
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-header bg-white border-0 pt-4 px-4 pb-0 d-flex justify-content-between align-items-center">
+            <div>
+                <h5 class="fw-bold text-dark mb-0">
+                    <i class="bi bi-bag-fill text-success me-2"></i> My Won Products & Purchases
+                </h5>
+                <p class="text-muted small mb-0">History of products reserved for you via live bargaining.</p>
+            </div>
+            <a href="{% url 'explore_products' %}" class="btn btn-sm btn-outline-success rounded-pill px-3">
+                <i class="bi bi-shop me-1"></i> Browse Marketplace
+            </a>
+        </div>
+        <div class="card-body p-4">
+            {% if purchases %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Sale ID</th>
+                                <th>Product</th>
+                                <th>Category</th>
+                                <th>Farmer</th>
+                                <th>Quantity Purchased</th>
+                                <th>Winning Price</th>
+                                <th>Total Amount</th>
+                                <th>Purchase Date</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for p in purchases %}
+                                <tr>
+                                    <td class="fw-bold text-success">{{ p.sale_id }}</td>
+                                    <td class="fw-semibold">{{ p.product.product_name }}</td>
+                                    <td><span class="badge bg-success bg-opacity-10 text-success rounded-pill px-2.5 py-1">{{ p.product.category }}</span></td>
+                                    <td>{{ p.farmer.full_name }} <small class="text-muted">({{ p.farmer.farmer_id }})</small></td>
+                                    <td class="fw-semibold">{{ p.quantity }} {{ p.product.unit }}</td>
+                                    <td class="fw-bold">₹{{ p.winning_price }} / {{ p.product.unit }}</td>
+                                    <td class="fw-bold text-success">₹{{ p.total_amount }}</td>
+                                    <td class="text-muted small">{{ p.sale_date|date:"Y-m-d H:i" }}</td>
+                                    <td><span class="badge bg-success rounded-pill px-3">PURCHASED / WON</span></td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-5 text-muted">
+                    <i class="bi bi-cart-x fs-1 text-secondary mb-3 d-block"></i>
+                    <h5 class="fw-bold text-dark">No Won Products Yet</h5>
+                    <p class="mb-3">Explore the weekly marketplace and participate in live bargaining to win fresh agricultural produce.</p>
+                    <a href="{% url 'explore_products' %}" class="btn btn-farmlink-primary rounded-pill px-4 shadow-sm">
+                        <i class="bi bi-shop me-1"></i> Explore Marketplace Now
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

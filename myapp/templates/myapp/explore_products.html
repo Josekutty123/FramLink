@@ -1,0 +1,154 @@
+{% extends 'myapp/base.html' %}
+{% load static %}
+
+{% block title %}Explore Products - FarmLink Weekly Marketplace{% endblock %}
+
+{% block content %}
+<!-- Marketplace Header Section -->
+<section class="py-5 text-white position-relative overflow-hidden" style="background: linear-gradient(135deg, #1b4332 0%, #2d6a4f 100%);">
+    <div class="container py-3">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <span class="badge bg-warning text-dark px-3 py-2 rounded-pill fw-semibold mb-3">
+                    <i class="bi bi-shop me-1"></i> Live Agricultural Marketplace
+                </span>
+                <h1 class="display-4 fw-bold mb-3">Explore Fresh Produce</h1>
+                <p class="lead opacity-75 mb-0">
+                    Directly connect with local farmers through our transparent live bargaining platform.
+                </p>
+            </div>
+            <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+                <div class="bg-white bg-opacity-10 backdrop-blur rounded-4 p-3 d-inline-block text-start border border-light border-opacity-25">
+                    <div class="d-flex align-items-center gap-3">
+                        {% if market_settings.status == 'OPEN' %}
+                            <div class="bg-success text-white p-2 rounded-circle fs-4">
+                                <i class="bi bi-door-open-fill"></i>
+                            </div>
+                            <div>
+                                <small class="text-white-50 d-block">Marketplace Status</small>
+                                <span class="fw-bold fs-5 text-warning">OPEN NOW</span>
+                            </div>
+                        {% else %}
+                            <div class="bg-danger text-white p-2 rounded-circle fs-4">
+                                <i class="bi bi-door-closed-fill"></i>
+                            </div>
+                            <div>
+                                <small class="text-white-50 d-block">Marketplace Status</small>
+                                <span class="fw-bold fs-5 text-white-50">CLOSED</span>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Products Grid Section -->
+<section class="py-5 bg-light min-vh-100">
+    <div class="container py-3">
+        {% if market_settings.status != 'OPEN' %}
+            <!-- CLOSED MARKET NOTICE -->
+            <div class="row justify-content-center py-5">
+                <div class="col-lg-8 text-center">
+                    <div class="card border-0 shadow-lg rounded-5 p-5 text-center bg-white position-relative">
+                        <div class="bg-danger bg-opacity-10 text-danger rounded-circle p-4 d-inline-block mx-auto mb-4" style="width: 100px; height: 100px;">
+                            <i class="bi bi-shop-window display-3"></i>
+                        </div>
+                        <h2 class="fw-bold text-dark mb-3">The weekly marketplace is currently closed.</h2>
+                        <p class="text-secondary leading-relaxed fs-5 mb-4">
+                            Products will be visible after the Administrator opens the marketplace.
+                        </p>
+                        {% if market_settings.opening_time %}
+                            <p class="text-muted small mb-4">
+                                Expected Opening Time: <strong>{{ market_settings.opening_time }}</strong> (Date: {{ market_settings.market_date|default:"TBD" }})
+                            </p>
+                        {% endif %}
+                        <div>
+                            <a href="{% url 'home' %}" class="btn btn-farmlink-primary px-5 py-3 rounded-pill shadow-lg">
+                                <i class="bi bi-house-door-fill me-2"></i> Return to Home
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <!-- OPEN MARKET PRODUCTS LISTING -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h3 class="fw-bold text-dark mb-1">Available Produce</h3>
+                    <p class="text-muted mb-0">Browse active items and join live bargaining rooms to place your bids.</p>
+                </div>
+                <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3 py-2 fw-semibold">
+                    {{ products.count }} Products Available
+                </span>
+            </div>
+
+            {% if products %}
+                <div class="row g-4">
+                    {% for p in products %}
+                        <div class="col-md-6 col-lg-4 col-xl-3">
+                            <div class="card border-0 shadow-sm rounded-4 h-100 overflow-hidden hover-card transition-all" style="background: #ffffff;">
+                                <div class="position-relative">
+                                    {% if p.image %}
+                                        <img src="{{ p.image.url }}" alt="{{ p.product_name }}" class="card-img-top" style="height: 220px; object-fit: cover;">
+                                    {% else %}
+                                        <div class="bg-success bg-opacity-10 card-img-top d-flex align-items-center justify-content-center text-success" style="height: 220px;">
+                                            <i class="bi bi-image display-3 opacity-50"></i>
+                                        </div>
+                                    {% endif %}
+                                    <span class="position-absolute top-0 end-0 bg-success text-white badge m-3 px-3 py-2 rounded-pill shadow-sm">
+                                        {{ p.status }}
+                                    </span>
+                                </div>
+
+                                <div class="card-body p-4 d-flex flex-column">
+                                    <div class="mb-2">
+                                        <div class="d-flex justify-content-between align-items-start gap-2 mb-1">
+                                            <h5 class="fw-bold text-dark mb-0">{{ p.product_name }}</h5>
+                                            <span class="badge bg-success bg-opacity-15 text-success rounded-pill px-2.5 py-1 text-nowrap" style="font-size: 0.75rem;">
+                                                <i class="bi bi-tag-fill me-1"></i>{{ p.category }}
+                                            </span>
+                                        </div>
+                                        <span class="text-muted small">
+                                            <i class="bi bi-person-fill text-success me-1"></i> Farmer: <strong class="text-dark">{{ p.farmer.full_name }}</strong>
+                                        </span>
+                                    </div>
+
+
+                                    <p class="text-secondary small mb-3 flex-grow-1 text-truncate-3" style="display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;">
+                                        {{ p.description }}
+                                    </p>
+
+                                    <div class="bg-light p-3 rounded-3 mb-3">
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <span class="text-muted small">Available Quantity:</span>
+                                            <span class="fw-bold text-dark">{{ p.quantity }} {{ p.unit }}</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span class="text-muted small">Starting Price:</span>
+                                            <span class="fw-bold text-success fs-5">₹{{ p.price_per_unit }} <small class="fs-6 text-muted">/ {{ p.unit }}</small></span>
+                                        </div>
+                                    </div>
+
+                                    <div class="mt-auto">
+                                        <a href="{% url 'join_bargaining' p.product_id %}" class="btn btn-farmlink-primary w-100 py-2.5 rounded-pill shadow-sm fw-semibold">
+                                            <i class="bi bi-chat-left-quote-fill me-2"></i> Join Bargaining
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-5 bg-white rounded-5 shadow-sm">
+                    <i class="bi bi-inbox display-1 text-muted opacity-50 mb-3 d-block"></i>
+                    <h4 class="fw-bold text-dark">No Products Currently Listed</h4>
+                    <p class="text-muted mb-0">Farmers are preparing their stock. Please check back shortly!</p>
+                </div>
+            {% endif %}
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

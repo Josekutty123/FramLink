@@ -1,0 +1,135 @@
+{% extends 'myapp/admin_base.html' %}
+{% load static %}
+
+{% block title %}Sale Details - FarmLink ERP{% endblock %}
+
+{% block admin_content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="h3 mb-0 text-gray-800">
+            <a href="{% url 'admin_sales_history' %}" class="btn btn-sm btn-outline-secondary me-2">
+                <i class="bi bi-arrow-left"></i> Back
+            </a>
+            Sale Details <span class="text-success">#{{ sale.sale_id }}</span>
+        </h2>
+        <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 fs-6">
+            <i class="bi bi-check-circle-fill me-1"></i> Completed
+        </span>
+    </div>
+
+    <div class="row g-4">
+        <!-- Sale Info & Product Details -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0 rounded-4 mb-4">
+                <div class="card-header bg-white py-3">
+                    <h6 class="m-0 font-weight-bold text-success"><i class="bi bi-info-circle me-2"></i>Sale Information</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row align-items-center mb-4 pb-4 border-bottom">
+                        <div class="col-md-3 text-center mb-3 mb-md-0">
+                            {% if sale.product.image %}
+                                <img src="{{ sale.product.image.url }}" alt="{{ sale.product.product_name }}" class="img-fluid rounded-3 shadow-sm" style="max-height: 120px; object-fit: cover;">
+                            {% else %}
+                                <div class="bg-secondary rounded-3 text-white d-flex align-items-center justify-content-center mx-auto shadow-sm" style="width: 120px; height: 120px;">
+                                    <i class="bi bi-image fs-1"></i>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-9">
+                            <h4 class="mb-1">{{ sale.product.product_name }}</h4>
+                            <p class="text-muted mb-2">Product ID: {{ sale.product.product_id }}</p>
+                            <div class="d-flex gap-3 flex-wrap">
+                                <div class="bg-light px-3 py-2 rounded">
+                                    <span class="small text-muted d-block">Quantity Sold</span>
+                                    <span class="fw-bold fs-5">{{ sale.quantity }} {{ sale.product.unit }}</span>
+                                </div>
+                                <div class="bg-light px-3 py-2 rounded">
+                                    <span class="small text-muted d-block">Winning Price</span>
+                                    <span class="fw-bold fs-5 text-primary">₹{{ sale.winning_price }} <small class="text-muted fs-6">/{{ sale.product.unit }}</small></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3 mb-md-0">
+                            <h6 class="text-muted small text-uppercase fw-bold mb-3">Financial Breakdown</h6>
+                            <ul class="list-group list-group-flush rounded border">
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    Total Amount
+                                    <span class="fw-bold text-success fs-5">₹{{ sale.total_amount }}</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    Farmer Share (80%)
+                                    <span class="text-primary fw-bold">₹{{ sale.farmer_share }}</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    Admin Commission (20%)
+                                    <span class="text-warning fw-bold">₹{{ sale.admin_commission }}</span>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted small text-uppercase fw-bold mb-3">Transaction Details</h6>
+                            <ul class="list-unstyled">
+                                <li class="mb-2"><span class="text-muted me-2">Sale Date:</span> {{ sale.sale_date|date:"F d, Y h:i A" }}</li>
+                                <li class="mb-2"><span class="text-muted me-2">Sale Status:</span> <span class="badge bg-success-subtle text-success">Completed</span></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Participants Details -->
+        <div class="col-lg-4">
+            <!-- Farmer Details -->
+            <div class="card shadow-sm border-0 rounded-4 mb-4">
+                <div class="card-header bg-white py-3 border-bottom-0">
+                    <h6 class="m-0 font-weight-bold text-success"><i class="bi bi-person-badge me-2"></i>Farmer Details</h6>
+                </div>
+                <div class="card-body pt-0">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center me-3 flex-shrink-0" style="width: 45px; height: 45px;">
+                            <i class="bi bi-person fs-5"></i>
+                        </div>
+                        <div>
+                            <h6 class="mb-0 fw-bold">{{ sale.farmer.full_name }}</h6>
+                            <small class="text-muted">{{ sale.farmer.farmer_id }}</small>
+                        </div>
+                    </div>
+                    <ul class="list-unstyled mb-0 small">
+                        <li class="mb-2"><i class="bi bi-telephone text-muted me-2"></i> {{ sale.farmer.phone }}</li>
+                        <li class="mb-2"><i class="bi bi-geo-alt text-muted me-2"></i> {{ sale.farmer.place }}</li>
+                        <li><i class="bi bi-envelope text-muted me-2"></i> {{ sale.farmer.email }}</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Customer Details -->
+            <div class="card shadow-sm border-0 rounded-4">
+                <div class="card-header bg-white py-3 border-bottom-0">
+                    <h6 class="m-0 font-weight-bold text-success"><i class="bi bi-person-check me-2"></i>Customer Details</h6>
+                </div>
+                <div class="card-body pt-0">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3 flex-shrink-0" style="width: 45px; height: 45px;">
+                            <i class="bi bi-person fs-5"></i>
+                        </div>
+                        <div>
+                            <h6 class="mb-0 fw-bold">{{ sale.customer.full_name }}</h6>
+                            <small class="text-muted">{{ sale.customer.customer_id }}</small>
+                        </div>
+                    </div>
+                    <ul class="list-unstyled mb-0 small">
+                        <li class="mb-2"><i class="bi bi-telephone text-muted me-2"></i> {{ sale.customer.phone }}</li>
+                        <li class="mb-2"><i class="bi bi-geo-alt text-muted me-2"></i> {{ sale.customer.place }}</li>
+                        <li><i class="bi bi-envelope text-muted me-2"></i> {{ sale.customer.email }}</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock admin_content %}

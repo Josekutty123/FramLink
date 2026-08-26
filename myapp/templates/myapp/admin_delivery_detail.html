@@ -1,0 +1,72 @@
+{% extends 'myapp/admin_base.html' %}
+{% load static %}
+
+{% block admin_content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold text-success mb-1">Delivery Person Profile</h3>
+            <p class="text-muted mb-0">Detailed view for {{ delivery.delivery_id }}</p>
+        </div>
+        <a href="{% url 'admin_deliveries' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Back to List
+        </a>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-md-5 col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-body p-4 text-center">
+                    <div class="bg-success-subtle text-success rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 100px; height: 100px; font-size: 2.5rem;">
+                        <i class="bi bi-truck"></i>
+                    </div>
+                    <h4 class="fw-bold mb-1">{{ delivery.full_name }}</h4>
+                    <p class="text-muted mb-3">{{ delivery.delivery_id }}</p>
+                    
+                    <div class="mb-4">
+                        {% if delivery.status == 'AVAILABLE' %}
+                            <span class="badge bg-success px-3 py-2 fs-6">AVAILABLE</span>
+                        {% elif delivery.status == 'BUSY' %}
+                            <span class="badge bg-warning text-dark px-3 py-2 fs-6">BUSY</span>
+                        {% else %}
+                            <span class="badge bg-danger px-3 py-2 fs-6">INACTIVE</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-7 col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-transparent border-bottom-0 pt-4 pb-0 px-4">
+                    <h5 class="fw-bold"><i class="bi bi-info-circle text-success me-2"></i> Information</h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-4">
+                        <div class="col-sm-6">
+                            <h6 class="text-muted small text-uppercase fw-bold mb-1">Email Address</h6>
+                            <p class="mb-0 fw-semibold">{{ delivery.email }}</p>
+                        </div>
+                        <div class="col-sm-6">
+                            <h6 class="text-muted small text-uppercase fw-bold mb-1">Phone Number</h6>
+                            <p class="mb-0 fw-semibold">{{ delivery.phone }}</p>
+                        </div>
+                        <div class="col-sm-6">
+                            <h6 class="text-muted small text-uppercase fw-bold mb-1">Joined Date</h6>
+                            <p class="mb-0 fw-semibold">{{ delivery.joining_date|date:"M d, Y" }}</p>
+                        </div>
+                        <div class="col-sm-6">
+                            <h6 class="text-muted small text-uppercase fw-bold mb-1">Age & Gender</h6>
+                            <p class="mb-0 fw-semibold">{{ delivery.age }} yrs, {{ delivery.gender }}</p>
+                        </div>
+                        <div class="col-12">
+                            <h6 class="text-muted small text-uppercase fw-bold mb-1">Detailed Address</h6>
+                            <p class="mb-0 bg-light p-3 rounded-3">{{ delivery.address }}, {{ delivery.place }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

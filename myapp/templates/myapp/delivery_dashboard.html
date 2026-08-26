@@ -1,0 +1,180 @@
+{% extends 'myapp/erp_base.html' %}
+
+{% block title %}Delivery Dashboard - FarmLink ERP{% endblock %}
+
+{% block erp_content %}
+<div class="container-fluid px-0">
+    <!-- Welcome Header Banner -->
+    <div class="glass-card p-4 p-md-5 mb-4 text-white"
+        style="background: linear-gradient(135deg, #1b4332 0%, #2d6a4f 100%);">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <span
+                    class="badge bg-success bg-opacity-25 text-white border border-success rounded-pill px-3 py-2 mb-3">
+                    <i class="bi bi-truck me-1"></i> Delivery ERP Portal
+                </span>
+                <h2 class="fw-bold mb-2">Welcome Delivery Person, {{ delivery.full_name }}!</h2>
+                <p class="mb-0 text-white-50 lead fs-6">
+                    Agricultural Resource & Marketplace Management System. Access your delivery profile and logistics status from the sidebar menu.
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                <a href="{% url 'delivery_profile' %}" class="btn btn-farmlink-outline text-white border-white">
+                    <i class="bi bi-person-lines-fill me-1"></i> View Profile
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Navigation Cards -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-4">
+            <div class="profile-card p-4 h-100 shadow-sm border-0 rounded-4">
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <div class="stat-icon green bg-success-subtle text-success p-3 rounded-circle fs-4">
+                        <i class="bi bi-person-badge-fill"></i>
+                    </div>
+                    <div>
+                        <h6 class="text-muted small text-uppercase fw-bold mb-1">User ID</h6>
+                        <h4 class="fw-bold text-success mb-0">{{ delivery.delivery_id }}</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="profile-card p-4 h-100 shadow-sm border-0 rounded-4">
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <div class="stat-icon mint bg-warning-subtle text-warning p-3 rounded-circle fs-4">
+                        <i class="bi bi-truck"></i>
+                    </div>
+                    <div>
+                        <h6 class="text-muted small text-uppercase fw-bold mb-1">Status</h6>
+                        <h4 class="fw-bold text-dark mb-0">{{ delivery.status }}</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="profile-card p-4 h-100 shadow-sm border-0 rounded-4">
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <div class="stat-icon accent bg-info-subtle text-info p-3 rounded-circle fs-4">
+                        <i class="bi bi-box-seam"></i>
+                    </div>
+                    <div>
+                        <h6 class="text-muted small text-uppercase fw-bold mb-1">Active Orders</h6>
+                        <h4 class="fw-bold text-dark mb-0">{{ assigned_orders|length }}</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assigned Deliveries -->
+    <h4 class="fw-bold mb-4 text-success"><i class="bi bi-card-checklist me-2"></i> Assigned Deliveries</h4>
+    
+    {% if assigned_orders %}
+        <div class="row g-4 mb-5">
+            {% for order in assigned_orders %}
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                        <div class="card-header bg-success text-white px-4 py-3 d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0 fw-bold"><i class="bi bi-box me-2"></i> Order: {{ order.order_id }}</h5>
+                            <span class="badge bg-white text-success rounded-pill px-3 py-2 fw-bold">
+                                {{ order.status }}
+                            </span>
+                        </div>
+                        <div class="card-body p-4 p-md-5">
+                            <div class="row g-4">
+                                <div class="col-md-4 border-end-md">
+                                    <h6 class="text-muted text-uppercase fw-bold mb-3"><i class="bi bi-info-circle-fill me-2"></i> Product Details</h6>
+                                    <div class="mb-2"><span class="fw-semibold">Product:</span> {{ order.sale.product.product_name }}</div>
+                                    <div class="mb-2"><span class="fw-semibold">Quantity:</span> {{ order.sale.quantity }} {{ order.sale.product.unit }}</div>
+                                </div>
+                                <div class="col-md-4 border-end-md">
+                                    <h6 class="text-primary text-uppercase fw-bold mb-3"><i class="bi bi-geo-alt-fill me-2"></i> Pickup From Farmer</h6>
+                                    <div class="mb-2"><span class="fw-semibold">Name:</span> {{ order.sale.farmer.full_name }}</div>
+                                    <div class="mb-2"><span class="fw-semibold">Phone:</span> <a href="tel:{{ order.sale.farmer.phone }}" class="text-decoration-none">{{ order.sale.farmer.phone }}</a></div>
+                                    <div class="mb-2"><span class="fw-semibold">Place:</span> {{ order.sale.farmer.place }}</div>
+                                    <div class="small text-muted">{{ order.sale.farmer.address }}</div>
+                                </div>
+                                <div class="col-md-4">
+                                    <h6 class="text-danger text-uppercase fw-bold mb-3"><i class="bi bi-house-door-fill me-2"></i> Deliver To Customer</h6>
+                                    <div class="mb-2"><span class="fw-semibold">Name:</span> {{ order.sale.customer.full_name }}</div>
+                                    <div class="mb-2"><span class="fw-semibold">Phone:</span> <a href="tel:{{ order.sale.customer.phone }}" class="text-decoration-none">{{ order.sale.customer.phone }}</a></div>
+                                    <div class="mb-2"><span class="fw-semibold">Place:</span> {{ order.sale.customer.place }}</div>
+                                    <div class="small text-muted">{{ order.sale.customer.address }}</div>
+                                </div>
+                            </div>
+                            
+                            <hr class="my-4">
+                            
+                            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                                <div>
+                                    <small class="text-muted">Current Status: <strong class="text-dark">{{ order.status }}</strong></small>
+                                </div>
+                                <div>
+                                    <form method="post" action="{% url 'delivery_update_status' order.order_id %}" class="d-flex gap-2">
+                                        {% csrf_token %}
+                                        
+                                        {% if order.status == 'ASSIGNED' %}
+                                            <input type="hidden" name="status" value="PICKED_UP">
+                                            <button type="submit" class="btn btn-primary px-4 fw-bold shadow-sm">Mark as Picked Up</button>
+                                        
+                                        {% elif order.status == 'PICKED_UP' %}
+                                            <input type="hidden" name="status" value="OUT_FOR_DELIVERY">
+                                            <button type="submit" class="btn btn-warning px-4 fw-bold shadow-sm">Out for Delivery</button>
+                                            
+                                        {% elif order.status == 'OUT_FOR_DELIVERY' %}
+                                            <input type="hidden" name="status" value="DELIVERED">
+                                            <button type="submit" class="btn btn-success px-4 fw-bold shadow-sm">Mark as Delivered</button>
+                                        {% endif %}
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="text-center py-5 bg-white rounded-4 shadow-sm mb-5">
+            <i class="bi bi-cup-hot display-1 text-success opacity-50 mb-3"></i>
+            <h4 class="text-muted fw-bold">No active deliveries</h4>
+            <p class="text-muted">You have no assigned deliveries at the moment.</p>
+        </div>
+    {% endif %}
+
+    <!-- Completed Deliveries -->
+    <h4 class="fw-bold mb-4 text-secondary"><i class="bi bi-clock-history me-2"></i> Completed Deliveries</h4>
+    {% if completed_orders %}
+        <div class="card border-0 shadow-sm rounded-4 mb-5">
+            <div class="card-body p-4">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th scope="col">Order ID</th>
+                                <th scope="col">Product</th>
+                                <th scope="col">Customer</th>
+                                <th scope="col">Delivered On</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for order in completed_orders %}
+                                <tr>
+                                    <td><span class="badge bg-light text-dark border px-2 py-1">{{ order.order_id }}</span></td>
+                                    <td>{{ order.sale.product.product_name }}</td>
+                                    <td>{{ order.sale.customer.full_name }} ({{ order.sale.customer.place }})</td>
+                                    <td>{{ order.updated_at|date:"M d, Y H:i" }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <p class="text-muted ms-2">No completed deliveries yet.</p>
+    {% endif %}
+</div>
+{% endblock %}

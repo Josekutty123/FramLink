@@ -1,0 +1,147 @@
+{% extends 'myapp/base.html' %}
+{% load static %}
+
+{% block title %}Choose Login - FarmLink ERP{% endblock %}
+
+{% block content %}
+<div class="container py-5 min-vh-75 d-flex flex-column justify-content-center">
+    <!-- Header Section -->
+    <div class="text-center mb-5">
+        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-3 py-2 mb-3 fw-semibold">
+            <i class="bi bi-tree-fill me-1"></i> FarmLink ERP Portal Selection
+        </span>
+        <h1 class="display-5 fw-bold text-success mb-2">Welcome to FarmLink ERP</h1>
+        <p class="lead text-muted mx-auto" style="max-width: 600px;">
+            Select your role portal to access your management dashboard.
+        </p>
+    </div>
+
+    <!-- Login Option Cards Grid -->
+    <div class="row justify-content-center g-4">
+        <!-- CARD 1: Farmer -->
+        <div class="col-xl-4 col-md-6">
+            <div class="card h-100 border-0 rounded-4 shadow-sm hover-card transition-all p-4 text-center position-relative overflow-hidden bg-white">
+                <div class="position-absolute top-0 end-0 p-3 opacity-10">
+                    <i class="bi bi-flower1 display-1 text-success"></i>
+                </div>
+                <div class="card-body d-flex flex-column align-items-center justify-content-between p-0">
+                    <div>
+                        <div class="icon-circle bg-success bg-opacity-10 text-success rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 80px; height: 80px; font-size: 2.5rem;">
+                            🌾
+                        </div>
+                        <h3 class="fw-bold text-dark mb-2">Farmer</h3>
+                        <p class="text-secondary small mb-4">
+                            Access your Farmer Dashboard. Manage your registered crops, field metrics, and agricultural resources.
+                        </p>
+                    </div>
+                    <div class="w-100 mt-2">
+                        <a href="{% url 'farmer_login' %}" class="btn btn-farmlink-primary btn-lg w-100 rounded-pill py-3 fw-bold shadow">
+                            <i class="bi bi-box-arrow-in-right me-2"></i> Farmer Login
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CARD 2: Customer -->
+        <div class="col-xl-4 col-md-6">
+            <div class="card h-100 border-0 rounded-4 shadow-sm hover-card transition-all p-4 text-center position-relative overflow-hidden bg-white">
+                <div class="position-absolute top-0 end-0 p-3 opacity-10">
+                    <i class="bi bi-cart display-1 text-success"></i>
+                </div>
+                <div class="card-body d-flex flex-column align-items-center justify-content-between p-0">
+                    <div>
+                        <div class="icon-circle bg-warning bg-opacity-15 text-warning rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 80px; height: 80px; font-size: 2.5rem;">
+                            🛒
+                        </div>
+                        <h3 class="fw-bold text-dark mb-2">Customer</h3>
+                        <p class="text-secondary small mb-4">
+                            Access your Customer Dashboard. Browse fresh produce, place orders, and track your marketplace purchases.
+                        </p>
+                    </div>
+                    <div class="w-100 mt-2">
+                        <a href="{% url 'customer_login' %}" class="btn btn-farmlink-primary btn-lg w-100 rounded-pill py-3 fw-bold shadow">
+                            <i class="bi bi-box-arrow-in-right me-2"></i> Customer Login
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CARD 3: Worker -->
+        <div class="col-xl-4 col-md-6">
+            <div class="card h-100 border-0 rounded-4 shadow-sm hover-card transition-all p-4 text-center position-relative overflow-hidden bg-white">
+                <div class="position-absolute top-0 end-0 p-3 opacity-10">
+                    <i class="bi bi-tools display-1 text-success"></i>
+                </div>
+                <div class="card-body d-flex flex-column align-items-center justify-content-between p-0">
+                    <div>
+                        <div class="icon-circle bg-info bg-opacity-15 text-info rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 80px; height: 80px; font-size: 2.5rem;">
+                            👷
+                        </div>
+                        <h3 class="fw-bold text-dark mb-2">Worker</h3>
+                        <p class="text-secondary small mb-4">
+                            Access your Worker Dashboard. View assigned farm tasks, manage field schedules, and log daily activities.
+                        </p>
+                    </div>
+                    <div class="w-100 mt-2">
+                        <a href="{% url 'worker_login' %}" class="btn btn-farmlink-primary btn-lg w-100 rounded-pill py-3 fw-bold shadow">
+                            <i class="bi bi-box-arrow-in-right me-2"></i> Worker Login
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CARD 4: Delivery Person -->
+        <div class="col-xl-4 col-md-6">
+            <div class="card h-100 border-0 rounded-4 shadow-sm hover-card transition-all p-4 text-center position-relative overflow-hidden bg-white">
+                <div class="position-absolute top-0 end-0 p-3 opacity-10">
+                    <i class="bi bi-truck display-1 text-success"></i>
+                </div>
+                <div class="card-body d-flex flex-column align-items-center justify-content-between p-0">
+                    <div>
+                        <div class="icon-circle bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 80px; height: 80px; font-size: 2.5rem;">
+                            🚚
+                        </div>
+                        <h3 class="fw-bold text-dark mb-2">Delivery Person</h3>
+                        <p class="text-secondary small mb-4">
+                            Access your Delivery Dashboard. View shipment routes, update order delivery status, and handle logistics.
+                        </p>
+                    </div>
+                    <div class="w-100 mt-2">
+                        <a href="{% url 'delivery_login' %}" class="btn btn-farmlink-primary btn-lg w-100 rounded-pill py-3 fw-bold shadow">
+                            <i class="bi bi-box-arrow-in-right me-2"></i> Delivery Login
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CARD 5: Administrator -->
+        <div class="col-xl-4 col-md-6">
+            <div class="card h-100 border-0 rounded-4 shadow-sm hover-card transition-all p-4 text-center position-relative overflow-hidden" style="background: linear-gradient(145deg, #ffffff 0%, #f4fbf7 100%); border: 1px solid rgba(27, 67, 50, 0.08) !important;">
+                <div class="position-absolute top-0 end-0 p-3 opacity-10">
+                    <i class="bi bi-shield-lock display-1 text-success"></i>
+                </div>
+                <div class="card-body d-flex flex-column align-items-center justify-content-between p-0">
+                    <div>
+                        <div class="icon-circle bg-dark bg-opacity-10 text-success rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 80px; height: 80px; font-size: 2.5rem;">
+                            🛡️
+                        </div>
+                        <h3 class="fw-bold text-dark mb-2">Administrator</h3>
+                        <p class="text-secondary small mb-4">
+                            Manage the FarmLink ERP System. Full administrative control over user profiles, analytics, and settings.
+                        </p>
+                    </div>
+                    <div class="w-100 mt-2">
+                        <a href="{% url 'admin_login' %}" class="btn btn-lg w-100 rounded-pill py-3 fw-bold shadow-lg text-white" style="background: linear-gradient(135deg, #1b4332 0%, #0d2818 100%);">
+                            <i class="bi bi-shield-check me-2"></i> Admin Login
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,124 @@
+{% extends 'myapp/base.html' %}
+{% load static %}
+
+{% block title %}Admin Portal - FarmLink ERP{% endblock %}
+
+{% block layout %}
+<div class="erp-wrapper">
+    <!-- Admin Left Sidebar -->
+    <aside class="erp-sidebar">
+        <a href="{% url 'admin_dashboard' %}" class="sidebar-brand">
+            <i class="bi bi-shield-lock-fill text-success"></i>
+            <div>
+                <span>FarmLink ERP</span>
+                <span class="badge bg-success-subtle text-success fs-6 d-block mt-1 fw-normal" style="font-size: 0.7rem !important;">Admin Portal</span>
+            </div>
+        </a>
+        <ul class="sidebar-menu">
+            <li class="sidebar-item">
+                <a href="{% url 'admin_dashboard' %}" class="sidebar-link {% if request.resolver_match.url_name == 'admin_dashboard' %}active{% endif %}">
+                    <i class="bi bi-grid-1x2-fill"></i>
+                    <span>Dashboard</span>
+                </a>
+            </li>
+            <li class="sidebar-item">
+                <a href="{% url 'admin_farmers' %}" class="sidebar-link {% if request.resolver_match.url_name == 'admin_farmers' or request.resolver_match.url_name == 'admin_farmer_detail' %}active{% endif %}">
+                    <i class="bi bi-people-fill"></i>
+                    <span>Farmers</span>
+                </a>
+            </li>
+            <li class="sidebar-item">
+                <a href="{% url 'admin_customers' %}" class="sidebar-link {% if request.resolver_match.url_name == 'admin_customers' %}active{% endif %}">
+                    <i class="bi bi-person-lines-fill"></i>
+                    <span>Customer Details</span>
+                </a>
+            </li>
+            <li class="sidebar-item">
+                <a href="{% url 'admin_marketplace' %}" class="sidebar-link {% if request.resolver_match.url_name == 'admin_marketplace' %}active{% endif %}">
+                    <i class="bi bi-shop me-2"></i>
+                    <span>Marketplace</span>
+                </a>
+            </li>
+            <li class="sidebar-item">
+                <a href="{% url 'admin_live_rooms' %}" class="sidebar-link {% if request.resolver_match.url_name == 'admin_live_rooms' %}active{% endif %}">
+                    <i class="bi bi-broadcast me-2"></i>
+                    <span>Live Rooms</span>
+                </a>
+            </li>
+            <li class="sidebar-item">
+                <a href="{% url 'admin_sales_history' %}" class="sidebar-link {% if request.resolver_match.url_name == 'admin_sales_history' or request.resolver_match.url_name == 'admin_sale_details' %}active{% endif %}">
+                    <i class="bi bi-receipt me-2"></i>
+                    <span>Sales History</span>
+                </a>
+            </li>
+            <li class="sidebar-item">
+                <a href="{% url 'admin_wallet' %}" class="sidebar-link {% if request.resolver_match.url_name == 'admin_wallet' %}active{% endif %}">
+                    <i class="bi bi-wallet2 me-2"></i>
+                    <span>Admin Wallet</span>
+                </a>
+            </li>
+            <li class="sidebar-item">
+                <a href="{% url 'admin_deliveries' %}" class="sidebar-link {% if request.resolver_match.url_name == 'admin_deliveries' or request.resolver_match.url_name == 'admin_add_delivery' or request.resolver_match.url_name == 'admin_edit_delivery' %}active{% endif %}">
+                    <i class="bi bi-truck me-2"></i>
+                    <span>Delivery Management</span>
+                </a>
+            </li>
+
+            <li class="sidebar-item mt-4">
+                <a href="{% url 'admin_logout' %}" class="sidebar-link text-danger">
+                    <i class="bi bi-box-arrow-right"></i>
+                    <span>Logout</span>
+                </a>
+            </li>
+        </ul>
+
+        <div class="p-3 text-center opacity-50 small border-top border-secondary">
+            FarmLink ERP v1.0 &copy; Admin
+        </div>
+    </aside>
+
+    <!-- Admin Main Content Area -->
+    <div class="erp-main">
+        <!-- Top Navigation -->
+        <header class="erp-topbar">
+            <div class="d-flex align-items-center gap-3">
+                <button class="btn btn-sm btn-outline-success d-lg-none" id="sidebarToggle">
+                    <i class="bi bi-list fs-5"></i>
+                </button>
+                <h5 class="topbar-welcome mb-0">
+                    Welcome, <span class="text-success fw-bold">{{ request.session.admin_name|default:"Admin" }}</span>
+                </h5>
+            </div>
+            <div class="topbar-actions">
+                <a href="#" class="icon-badge-btn position-relative" title="Notifications">
+                    <i class="bi bi-bell-fill fs-5"></i>
+                    <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle">
+                        <span class="visually-hidden">New notifications</span>
+                    </span>
+                </a>
+                <a href="{% url 'admin_dashboard' %}" class="icon-badge-btn" title="Profile">
+                    <i class="bi bi-person-circle fs-4"></i>
+                </a>
+            </div>
+        </header>
+
+        <!-- Flash messages inside ERP -->
+        <div class="px-4 pt-3">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show rounded-4 shadow-sm" role="alert">
+                        <i class="bi {% if message.tags == 'success' %}bi-check-circle-fill{% elif message.tags == 'error' %}bi-exclamation-triangle-fill{% else %}bi-info-circle-fill{% endif %} me-2"></i>
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        </div>
+
+        <!-- ERP Page Inner Content -->
+        <main class="erp-content">
+            {% block admin_content %}{% endblock %}
+        </main>
+    </div>
+</div>
+{% endblock layout %}

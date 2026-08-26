@@ -1,0 +1,139 @@
+{% extends 'myapp/base.html' %}
+{% load static %}
+
+{% block title %}FarmLink ERP - Modern Agricultural Management Platform{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="container py-5">
+        <div class="row align-items-center">
+            <div class="col-lg-9 col-xl-8 text-start">
+                <span class="badge bg-success bg-opacity-25 text-white border border-success rounded-pill px-3 py-2 mb-3">
+                    <i class="bi bi-patch-check-fill text-success me-1"></i> Next-Gen Agriculture ERP
+                </span>
+                <h1 class="hero-title mb-3 fw-bold display-3">FarmLink ERP</h1>
+                <h2 class="hero-subtitle mb-4">Agricultural Resource and Marketplace Management System</h2>
+                <p class="hero-description mb-4 lead">
+                    A modern ERP platform designed to simplify agricultural management for farmers. Streamline crop tracking, market linkages, resource management, and financial insights all in one place.
+                </p>
+                <div class="d-flex flex-wrap gap-3">
+                    <a href="{% url 'explore_products' %}" class="btn btn-farmlink-primary btn-lg shadow-lg">
+                        <i class="bi bi-shop me-2"></i> Explore Products
+                    </a>
+                    {% if request.session.farmer_id %}
+                        <a href="{% url 'dashboard' %}" class="btn btn-farmlink-outline btn-lg">
+                            <i class="bi bi-speedometer2 me-2"></i> Go to Dashboard
+                        </a>
+                    {% else %}
+                        <a href="{% url 'login' %}" class="btn btn-farmlink-outline btn-lg">
+                            <i class="bi bi-box-arrow-in-right me-2"></i> Farmer Login
+                        </a>
+                        <a href="{% url 'register' %}" class="btn btn-light btn-lg rounded-pill px-4 text-success border">
+                            <i class="bi bi-person-plus me-2"></i> Register Now
+                        </a>
+                    {% endif %}
+                </div>
+
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Features Overview Section -->
+<section class="py-5 bg-white">
+    <div class="container py-4">
+        <div class="text-center mb-5">
+            <h6 class="text-success fw-bold text-uppercase tracking-wider">Platform Key Features</h6>
+            <h2 class="fw-bold text-dark display-6">Built Exclusively for Modern Farmers</h2>
+            <div class="bg-success mx-auto rounded-pill" style="width: 60px; height: 4px;"></div>
+        </div>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="glass-card p-4 h-100 border text-center">
+                    <div class="stat-icon green mx-auto mb-3">
+                        <i class="bi bi-person-vcard"></i>
+                    </div>
+                    <h5 class="fw-bold mb-3">Digital Farmer ID</h5>
+                    <p class="text-muted">Unique automated farmer identification (F1, F2, ...) ensuring seamless profile management and verified access.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="glass-card p-4 h-100 border text-center">
+                    <div class="stat-icon mint mx-auto mb-3">
+                        <i class="bi bi-grid-1x2-fill"></i>
+                    </div>
+                    <h5 class="fw-bold mb-3">Resource Management</h5>
+                    <p class="text-muted">Intuitive ERP dashboard providing complete control over agricultural resources, inventory, and farming records.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="glass-card p-4 h-100 border text-center">
+                    <div class="stat-icon accent mx-auto mb-3">
+                        <i class="bi bi-graph-up-arrow"></i>
+                    </div>
+                    <h5 class="fw-bold mb-3">Marketplace Linkages</h5>
+                    <p class="text-muted">Direct connectivity to agricultural buyers and suppliers, maximizing profitability and yield tracking.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- About Section -->
+<section id="about" class="py-5 bg-light">
+    <div class="container py-4">
+        <div class="row align-items-center">
+            <div class="col-lg-6 mb-4 mb-lg-0">
+                <img src="https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?auto=format&fit=crop&w=800&q=80" alt="Agriculture Management" class="img-fluid rounded-4 shadow-lg">
+            </div>
+            <div class="col-lg-6 ps-lg-5">
+                <h6 class="text-success fw-bold text-uppercase">About FarmLink ERP</h6>
+                <h2 class="fw-bold mb-4">Transforming Agricultural Operations</h2>
+                <p class="text-secondary leading-relaxed mb-4">
+                    FarmLink ERP is an end-to-end Enterprise Resource Planning platform specifically built for agricultural producers, cooperative societies, and individual farmers. Our mission is to digitize farming records, simplify resource allocation, and enhance agricultural sustainability.
+                </p>
+                <ul class="list-unstyled mb-4">
+                    <li class="mb-2 text-dark"><i class="bi bi-check-circle-fill text-success me-2"></i> Standardized Farmer Profiles & Quick Verification</li>
+                    <li class="mb-2 text-dark"><i class="bi bi-check-circle-fill text-success me-2"></i> Real-time Dashboard Analytics</li>
+                    <li class="mb-2 text-dark"><i class="bi bi-check-circle-fill text-success me-2"></i> Built with High Security & MySQL Reliability</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Contact Section -->
+<section id="contact" class="py-5 bg-white">
+    <div class="container py-4">
+        <div class="text-center mb-5">
+            <h6 class="text-success fw-bold text-uppercase">Get In Touch</h6>
+            <h2 class="fw-bold display-6">Contact FarmLink Support</h2>
+            <p class="text-muted">Have questions or need assistance setting up your farmer account?</p>
+        </div>
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="glass-card p-4 p-md-5 border">
+                    <div class="row g-4 text-center">
+                        <div class="col-md-4">
+                            <i class="bi bi-geo-alt-fill fs-2 text-success mb-2 d-block"></i>
+                            <h6 class="fw-bold">Head Office</h6>
+                            <p class="text-muted small mb-0">Agricultural Tech Hub, Kerala, India</p>
+                        </div>
+                        <div class="col-md-4">
+                            <i class="bi bi-envelope-fill fs-2 text-success mb-2 d-block"></i>
+                            <h6 class="fw-bold">Email Us</h6>
+                            <p class="text-muted small mb-0">support@farmlinkerp.com</p>
+                        </div>
+                        <div class="col-md-4">
+                            <i class="bi bi-telephone-fill fs-2 text-success mb-2 d-block"></i>
+                            <h6 class="fw-bold">Helpline</h6>
+                            <p class="text-muted small mb-0">+91 1800 425 3276</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

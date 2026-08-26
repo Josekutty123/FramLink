@@ -1,0 +1,215 @@
+{% extends 'myapp/admin_base.html' %}
+{% load static %}
+
+{% block admin_content %}
+<div class="container-fluid p-4">
+    <!-- Page Header -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between pb-3 mb-4 border-bottom">
+        <div>
+            <h2 class="fw-bold text-success mb-1">
+                <i class="bi bi-speedometer2 me-2"></i> Admin Dashboard
+            </h2>
+            <p class="text-muted mb-0">Overview of registered farmers, listed products, and sold marketplace transactions.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'admin_marketplace' %}" class="btn btn-success rounded-pill px-4 shadow-sm">
+                <i class="bi bi-shop me-1"></i> Manage Marketplace
+            </a>
+            <a href="{% url 'admin_farmers' %}" class="btn btn-outline-secondary rounded-pill px-3">
+                <i class="bi bi-people-fill me-1"></i> Manage Farmers
+            </a>
+        </div>
+    </div>
+
+    <!-- Dashboard Stat Cards -->
+    <div class="row g-4 mb-4">
+        <!-- Total Farmers -->
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="bg-success bg-opacity-10 text-success p-3 rounded-circle fs-3">
+                        <i class="bi bi-people-fill"></i>
+                    </div>
+                    <div>
+                        <span class="text-muted small d-block">Total Farmers</span>
+                        <h3 class="fw-bold text-dark mb-0">{{ total_farmers }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Listed Products -->
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="bg-primary bg-opacity-10 text-primary p-3 rounded-circle fs-3">
+                        <i class="bi bi-box-seam-fill"></i>
+                    </div>
+                    <div>
+                        <span class="text-muted small d-block">Total Listed Products</span>
+                        <h3 class="fw-bold text-dark mb-0">{{ products.count }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Completed Sales -->
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="bg-warning bg-opacity-10 text-warning p-3 rounded-circle fs-3">
+                        <i class="bi bi-cart-check-fill"></i>
+                    </div>
+                    <div>
+                        <span class="text-muted small d-block">Sold Products</span>
+                        <h3 class="fw-bold text-dark mb-0">{{ sales.count }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Admin Wallet Quick Access -->
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 p-3 text-white h-100" style="background: linear-gradient(135deg, #1b4332 0%, #2d6a4f 100%);">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <span class="opacity-75 small d-block">Commission Wallet</span>
+                        <a href="{% url 'admin_wallet' %}" class="text-warning text-decoration-none fw-bold fs-5">
+                            View Wallet <i class="bi bi-arrow-right"></i>
+                        </a>
+                    </div>
+                    <i class="bi bi-wallet2 fs-2 opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 1: Products Added by Farmers -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-header bg-white border-0 pt-4 px-4 pb-0 d-flex justify-content-between align-items-center">
+            <div>
+                <h5 class="fw-bold text-dark mb-0">
+                    <i class="bi bi-box-seam text-success me-2"></i> Products Added by Farmers
+                </h5>
+                <p class="text-muted small mb-0">List of all agricultural products submitted by farmers across categories.</p>
+            </div>
+            <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3 py-2 fw-semibold">
+                {{ products.count }} Products Total
+            </span>
+        </div>
+        <div class="card-body p-4">
+            {% if products %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Product ID</th>
+                                <th>Image</th>
+                                <th>Product Name</th>
+                                <th>Category</th>
+                                <th>Farmer Name</th>
+                                <th>Quantity & Unit</th>
+                                <th>Starting Price</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for p in products %}
+                                <tr>
+                                    <td class="fw-bold text-success">{{ p.product_id }}</td>
+                                    <td>
+                                        {% if p.image %}
+                                            <img src="{{ p.image.url }}" alt="{{ p.product_name }}" class="rounded-3 shadow-sm" style="width: 45px; height: 45px; object-fit: cover;">
+                                        {% else %}
+                                            <div class="bg-light rounded-3 d-flex align-items-center justify-content-center text-muted" style="width: 45px; height: 45px;">
+                                                <i class="bi bi-image fs-5"></i>
+                                            </div>
+                                        {% endif %}
+                                    </td>
+                                    <td class="fw-semibold text-dark">{{ p.product_name }}</td>
+                                    <td>
+                                        <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-2.5 py-1">
+                                            <i class="bi bi-tag-fill me-1"></i>{{ p.category }}
+                                        </span>
+                                    </td>
+                                    <td>{{ p.farmer.full_name }} <span class="text-muted small">({{ p.farmer.farmer_id }})</span></td>
+                                    <td>{{ p.quantity }} {{ p.unit }}</td>
+                                    <td class="fw-bold text-success">₹{{ p.price_per_unit }} / {{ p.unit }}</td>
+                                    <td>
+                                        {% if p.status == 'AVAILABLE' %}
+                                            <span class="badge bg-success rounded-pill px-3">AVAILABLE</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary rounded-pill px-3">SOLD</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-4 text-muted">
+                    <i class="bi bi-inbox fs-1 d-block mb-2 text-secondary"></i>
+                    No products added by farmers yet.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Section 2: Sold Products & Split Distribution -->
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-header bg-white border-0 pt-4 px-4 pb-0 d-flex justify-content-between align-items-center">
+            <div>
+                <h5 class="fw-bold text-dark mb-0">
+                    <i class="bi bi-cart-check-fill text-warning me-2"></i> Sold Products & Revenue Distribution
+                </h5>
+                <p class="text-muted small mb-0">Detailed breakdown of sold items with 80% Farmer Share and 20% Admin Share.</p>
+            </div>
+            <span class="badge bg-warning bg-opacity-15 text-dark rounded-pill px-3 py-2 fw-semibold">
+                {{ sales.count }} Completed Transactions
+            </span>
+        </div>
+        <div class="card-body p-4">
+            {% if sales %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Sale ID</th>
+                                <th>Product Name</th>
+                                <th>Quantity</th>
+                                <th>Farmer Name</th>
+                                <th>Customer Name</th>
+                                <th>Total Sold Price</th>
+                                <th>Farmer Share (80%)</th>
+                                <th>Admin Share (20%)</th>
+                                <th>Sale Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for s in sales %}
+                                <tr>
+                                    <td class="fw-bold text-success">{{ s.sale_id }}</td>
+                                    <td class="fw-semibold text-dark">{{ s.product.product_name }}</td>
+                                    <td>{{ s.quantity }} {{ s.product.unit }}</td>
+                                    <td>{{ s.farmer.full_name }} <small class="text-muted">({{ s.farmer.farmer_id }})</small></td>
+                                    <td>{{ s.customer.full_name }} <small class="text-muted">({{ s.customer.customer_id }})</small></td>
+                                    <td class="fw-bold fs-6">₹{{ s.total_amount }}</td>
+                                    <td class="text-success fw-bold">₹{{ s.farmer_share }}</td>
+                                    <td class="text-warning fw-bold">+₹{{ s.admin_commission }}</td>
+                                    <td class="text-muted small">{{ s.sale_date|date:"Y-m-d H:i" }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-4 text-muted">
+                    <i class="bi bi-inbox fs-1 d-block mb-2 text-secondary"></i>
+                    No products sold yet. Transactions will appear here once farmers accept live bids.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

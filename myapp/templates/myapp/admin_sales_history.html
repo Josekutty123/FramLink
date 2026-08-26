@@ -1,0 +1,119 @@
+{% extends 'myapp/admin_base.html' %}
+{% load static %}
+
+{% block title %}Sales History - FarmLink ERP{% endblock %}
+
+{% block admin_content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="h3 mb-0 text-gray-800">Sales History</h2>
+    </div>
+
+    <!-- Filter Form -->
+    <div class="card shadow-sm mb-4 border-0 rounded-4">
+        <div class="card-header bg-white py-3">
+            <h6 class="m-0 font-weight-bold text-success"><i class="bi bi-funnel"></i> Filter Sales</h6>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label for="product" class="form-label text-muted small">Product Name</label>
+                    <input type="text" class="form-control form-control-sm" id="product" name="product" value="{{ product_query }}" placeholder="e.g. Tomatoes">
+                </div>
+                <div class="col-md-3">
+                    <label for="farmer" class="form-label text-muted small">Farmer Name</label>
+                    <input type="text" class="form-control form-control-sm" id="farmer" name="farmer" value="{{ farmer_query }}" placeholder="e.g. John Doe">
+                </div>
+                <div class="col-md-3">
+                    <label for="customer" class="form-label text-muted small">Customer Name</label>
+                    <input type="text" class="form-control form-control-sm" id="customer" name="customer" value="{{ customer_query }}" placeholder="e.g. Jane Smith">
+                </div>
+                <div class="col-md-3">
+                    <label for="date" class="form-label text-muted small">Sale Date</label>
+                    <input type="date" class="form-control form-control-sm" id="date" name="date" value="{{ date_query }}">
+                </div>
+                <div class="col-12 text-end">
+                    <a href="{% url 'admin_sales_history' %}" class="btn btn-sm btn-outline-secondary me-2">Clear</a>
+                    <button type="submit" class="btn btn-sm btn-success"><i class="bi bi-search"></i> Search</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Sales Table -->
+    <div class="card shadow-sm border-0 rounded-4">
+        <div class="card-header bg-white py-3">
+            <h6 class="m-0 font-weight-bold text-success"><i class="bi bi-table"></i> Completed Sales</h6>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0 text-nowrap">
+                    <thead class="table-light text-muted small">
+                        <tr>
+                            <th>Sale ID</th>
+                            <th>Image</th>
+                            <th>Product Name</th>
+                            <th>Farmer</th>
+                            <th>Customer</th>
+                            <th>Quantity</th>
+                            <th>Unit Price</th>
+                            <th>Total Amount</th>
+                            <th>Farmer Share</th>
+                            <th>Commission</th>
+                            <th>Sale Date</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody class="border-top-0">
+                        {% for sale in sales %}
+                        <tr>
+                            <td class="fw-bold">{{ sale.sale_id }}</td>
+                            <td>
+                                {% if sale.product.image %}
+                                <img src="{{ sale.product.image.url }}" alt="{{ sale.product.product_name }}" class="rounded" style="width: 40px; height: 40px; object-fit: cover;">
+                                {% else %}
+                                <div class="bg-secondary rounded text-white d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                    <i class="bi bi-image"></i>
+                                </div>
+                                {% endif %}
+                            </td>
+                            <td>{{ sale.product.product_name }}</td>
+                            <td>
+                                <div class="small fw-bold">{{ sale.farmer.full_name }}</div>
+                                <div class="text-muted" style="font-size: 0.75rem;">{{ sale.farmer.farmer_id }}</div>
+                            </td>
+                            <td>
+                                <div class="small fw-bold">{{ sale.customer.full_name }}</div>
+                                <div class="text-muted" style="font-size: 0.75rem;">{{ sale.customer.customer_id }}</div>
+                            </td>
+                            <td>{{ sale.quantity }} {{ sale.product.unit }}</td>
+                            <td>₹{{ sale.winning_price }}</td>
+                            <td class="fw-bold text-success">₹{{ sale.total_amount }}</td>
+                            <td class="text-primary">₹{{ sale.farmer_share }}</td>
+                            <td class="text-warning">₹{{ sale.admin_commission }}</td>
+                            <td class="small">{{ sale.sale_date|date:"M d, Y" }}</td>
+                            <td>
+                                <span class="badge bg-success-subtle text-success border border-success-subtle">Completed</span>
+                            </td>
+                            <td>
+                                <a href="{% url 'admin_sale_details' sale.sale_id %}" class="btn btn-sm btn-outline-info">
+                                    <i class="bi bi-eye"></i> View
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="13" class="text-center py-5 text-muted">
+                                <i class="bi bi-inbox fs-1 d-block mb-3"></i>
+                                No completed sales found.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock admin_content %}

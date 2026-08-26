@@ -1,0 +1,73 @@
+{% extends 'myapp/admin_base.html' %}
+{% load static %}
+
+{% block admin_content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div>
+            <h3 class="fw-bold text-success mb-1">Farmers Management</h3>
+            <p class="text-muted mb-0">List of registered farmers in FarmLink ERP</p>
+        </div>
+        <span class="badge bg-success rounded-pill px-3 py-2 fs-6">
+            <i class="bi bi-people-fill me-1"></i> Total: {{ farmers|length }}
+        </span>
+    </div>
+
+    <!-- Responsive Table Card -->
+    <div class="card border-0 rounded-4 shadow-sm overflow-hidden">
+        <div class="card-header bg-white py-3 px-4 border-bottom-0">
+            <div class="d-flex align-items-center justify-content-between">
+                <h5 class="fw-bold text-success mb-0">
+                    <i class="bi bi-table me-2"></i> Registered Farmers Directory
+                </h5>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4">Farmer ID</th>
+                        <th>Full Name</th>
+                        <th>Age</th>
+                        <th>Gender</th>
+                        <th>Place</th>
+                        <th>Phone</th>
+                        <th>Joining Date</th>
+                        <th class="text-end pe-4">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for farmer in farmers %}
+                    <tr>
+                        <td class="ps-4 fw-bold text-success">{{ farmer.farmer_id }}</td>
+                        <td class="fw-semibold text-dark">{{ farmer.full_name }}</td>
+                        <td>{{ farmer.age }}</td>
+                        <td>
+                            <span class="badge {% if farmer.gender == 'Male' %}bg-primary-subtle text-primary{% elif farmer.gender == 'Female' %}bg-danger-subtle text-danger{% else %}bg-secondary-subtle text-secondary{% endif %} rounded-pill px-3 py-1">
+                                {{ farmer.gender }}
+                            </span>
+                        </td>
+                        <td>{{ farmer.place }}</td>
+                        <td><i class="bi bi-telephone-fill text-muted me-1 small"></i>{{ farmer.phone }}</td>
+                        <td>{{ farmer.joining_date|date:"Y-m-d" }}</td>
+                        <td class="text-end pe-4">
+                            <a href="{% url 'admin_farmer_detail' farmer.pk %}" class="btn btn-sm btn-farmlink-primary rounded-pill px-3">
+                                <i class="bi bi-eye-fill me-1"></i> View
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center py-5 text-muted">
+                            <i class="bi bi-inbox fs-1 d-block mb-2 text-secondary"></i>
+                            No farmers registered yet.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

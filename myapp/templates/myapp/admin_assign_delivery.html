@@ -1,0 +1,103 @@
+{% extends 'myapp/admin_base.html' %}
+{% load static %}
+
+{% block admin_content %}
+<div class="container-fluid py-4">
+    <div class="mb-4">
+        <a href="{% url 'admin_deliveries' %}" class="btn btn-outline-secondary btn-sm mb-3">
+            <i class="bi bi-arrow-left"></i> Back to Delivery Management
+        </a>
+        <h3 class="fw-bold text-success mb-1">Assign Delivery Person</h3>
+        <p class="text-muted mb-0">Assign an available delivery person to order <span class="fw-bold">{{ order.order_id }}</span></p>
+    </div>
+
+    <div class="row g-4">
+        <!-- Delivery Details -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-white border-bottom py-3">
+                    <h5 class="fw-bold text-dark mb-0"><i class="bi bi-info-circle me-2 text-primary"></i>Delivery Details</h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <h6 class="text-muted small fw-bold text-uppercase">Product</h6>
+                            <div class="fw-bold text-dark fs-5">{{ order.sale.product.product_name }}</div>
+                            <div class="text-muted">{{ order.sale.product.quantity }} {{ order.sale.product.unit }}</div>
+                        </div>
+                        <div class="col-md-4">
+                            <h6 class="text-muted small fw-bold text-uppercase">Order ID</h6>
+                            <div class="fw-bold text-dark">{{ order.order_id }}</div>
+                        </div>
+                        <div class="col-md-4">
+                            <h6 class="text-muted small fw-bold text-uppercase">Total Amount</h6>
+                            <div class="fw-bold text-success">₹{{ order.sale.total_amount }}</div>
+                        </div>
+                    </div>
+
+                    <div class="row g-4">
+                        <!-- Pickup Location -->
+                        <div class="col-md-6">
+                            <div class="p-3 bg-light rounded-3 h-100">
+                                <h6 class="fw-bold text-dark mb-3"><i class="bi bi-shop me-2 text-warning"></i>Pickup From</h6>
+                                <div><i class="bi bi-person-fill text-muted me-2"></i>{{ order.sale.farmer.full_name }}</div>
+                                <div class="mt-2 text-muted">
+                                    {{ order.sale.farmer.address }}<br>
+                                    {{ order.sale.farmer.place }}
+                                </div>
+                                <div class="mt-2 fw-bold"><i class="bi bi-telephone-fill text-muted me-2"></i>{{ order.sale.farmer.phone }}</div>
+                            </div>
+                        </div>
+
+                        <!-- Delivery Location -->
+                        <div class="col-md-6">
+                            <div class="p-3 bg-success bg-opacity-10 rounded-3 h-100">
+                                <h6 class="fw-bold text-success mb-3"><i class="bi bi-geo-alt-fill me-2"></i>Deliver To</h6>
+                                <div><i class="bi bi-person-lines-fill text-muted me-2"></i>{{ order.sale.customer.full_name }}</div>
+                                <div class="mt-2 text-muted">
+                                    {{ order.sale.customer.address }}<br>
+                                    {{ order.sale.customer.place }}
+                                </div>
+                                <div class="mt-2 fw-bold"><i class="bi bi-telephone-fill text-muted me-2"></i>{{ order.sale.customer.phone }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Assignment Form -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-white border-bottom py-3">
+                    <h5 class="fw-bold text-dark mb-0"><i class="bi bi-person-check me-2 text-success"></i>Available Personnel</h5>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post" action="{% url 'admin_assign_delivery_action' order.order_id %}">
+                        {% csrf_token %}
+                        <div class="mb-4">
+                            <label for="delivery_id" class="form-label fw-bold">Select Delivery Person</label>
+                            <select name="delivery_id" id="delivery_id" class="form-select form-select-lg" required>
+                                <option value="" disabled selected>-- Choose from list --</option>
+                                {% for person in available_deliveries %}
+                                    <option value="{{ person.delivery_id }}">
+                                        {{ person.delivery_id }} - {{ person.full_name }} ({{ person.phone }})
+                                    </option>
+                                {% empty %}
+                                    <option value="" disabled>No delivery personnel available</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="d-grid mt-4">
+                            <button type="submit" class="btn btn-success btn-lg rounded-pill" {% if not available_deliveries %}disabled{% endif %}>
+                                Confirm Assignment
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

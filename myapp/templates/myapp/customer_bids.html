@@ -1,0 +1,77 @@
+{% extends 'myapp/erp_base.html' %}
+{% load static %}
+
+{% block title %}My Bids & Results - FarmLink ERP{% endblock %}
+
+{% block erp_content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="h3 mb-0 text-gray-800">My Bids & Bargaining Results</h2>
+    </div>
+
+    <div class="card shadow-sm border-0 rounded-4">
+        <div class="card-header bg-white py-3">
+            <h6 class="m-0 font-weight-bold text-success"><i class="bi bi-list-check me-2"></i> Bargaining History</h6>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0 text-nowrap">
+                    <thead class="table-light text-muted small">
+                        <tr>
+                            <th>Product ID</th>
+                            <th>Product Name</th>
+                            <th>Farmer</th>
+                            <th>Quantity</th>
+                            <th>Starting Price</th>
+                            <th>Status</th>
+                            <th>Result / Winner</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody class="border-top-0">
+                        {% for product in bid_products %}
+                        <tr>
+                            <td class="fw-bold">{{ product.product_id }}</td>
+                            <td>{{ product.product_name }}</td>
+                            <td>{{ product.farmer.full_name }}</td>
+                            <td>{{ product.quantity }} {{ product.unit }}</td>
+                            <td>₹{{ product.price_per_unit }} / {{ product.unit }}</td>
+                            <td>
+                                {% if product.status == 'AVAILABLE' %}
+                                    <span class="badge bg-warning text-dark px-2 py-1 rounded-pill">Active</span>
+                                {% else %}
+                                    <span class="badge bg-secondary px-2 py-1 rounded-pill">Closed</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if product.status == 'AVAILABLE' %}
+                                    <span class="text-muted small">Bargaining ongoing</span>
+                                {% else %}
+                                    {% if product.winning_customer.customer_id == customer.customer_id %}
+                                        <span class="badge bg-success px-3 py-2 rounded-pill"><i class="bi bi-trophy-fill text-warning me-1"></i> You Won!</span>
+                                    {% else %}
+                                        <span class="text-danger fw-bold small">Sold to: {{ product.winning_customer.full_name }}</span>
+                                    {% endif %}
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{% url 'live_bargaining' product.product_id %}" class="btn btn-sm btn-outline-info">
+                                    <i class="bi bi-eye"></i> View Room
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center py-5 text-muted">
+                                <i class="bi bi-inbox fs-1 d-block mb-3 opacity-25"></i>
+                                You have not placed any bids yet.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock erp_content %}

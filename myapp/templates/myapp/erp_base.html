@@ -1,0 +1,219 @@
+{% extends 'myapp/base.html' %}
+{% load static %}
+
+{% block layout %}
+<div class="erp-wrapper">
+    <!-- ERP Left Sidebar -->
+    <aside class="erp-sidebar">
+        {% if request.session.customer_id %}
+            <a href="{% url 'customer_dashboard' %}" class="sidebar-brand">
+                <i class="bi bi-cart-fill text-warning"></i>
+                <span>FarmLink Customer</span>
+            </a>
+            <ul class="sidebar-menu">
+                <li class="sidebar-item">
+                    <a href="{% url 'customer_dashboard' %}" class="sidebar-link {% if request.resolver_match.url_name == 'customer_dashboard' %}active{% endif %}">
+                        <i class="bi bi-grid-1x2-fill"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li class="sidebar-item">
+                    <a href="{% url 'explore_products' %}" class="sidebar-link {% if request.resolver_match.url_name == 'explore_products' %}active{% endif %}">
+                        <i class="bi bi-shop"></i>
+                        <span>Explore Marketplace</span>
+                    </a>
+                </li>
+                <li class="sidebar-item">
+                    <a href="{% url 'customer_live_rooms' %}" class="sidebar-link {% if request.resolver_match.url_name == 'customer_live_rooms' %}active{% endif %}">
+                        <i class="bi bi-broadcast"></i>
+                        <span>Live Rooms</span>
+                    </a>
+                </li>
+                <li class="sidebar-item">
+                    <a href="{% url 'customer_bids' %}" class="sidebar-link {% if request.resolver_match.url_name == 'customer_bids' %}active{% endif %}">
+                        <i class="bi bi-list-check"></i>
+                        <span>My Bids & Results</span>
+                    </a>
+                </li>
+                <li class="sidebar-item">
+                    <a href="{% url 'customer_profile' %}" class="sidebar-link {% if request.resolver_match.url_name == 'customer_profile' %}active{% endif %}">
+                        <i class="bi bi-person-lines-fill"></i>
+                        <span>Profile</span>
+                    </a>
+                </li>
+                <li class="sidebar-item mt-4">
+                    <a href="{% url 'customer_logout' %}" class="sidebar-link text-danger">
+                        <i class="bi bi-box-arrow-right"></i>
+                        <span>Logout</span>
+                    </a>
+                </li>
+            </ul>
+        {% elif request.session.worker_id %}
+            <a href="{% url 'worker_dashboard' %}" class="sidebar-brand">
+                <i class="bi bi-tools text-info"></i>
+                <span>FarmLink Worker</span>
+            </a>
+            <ul class="sidebar-menu">
+                <li class="sidebar-item">
+                    <a href="{% url 'worker_dashboard' %}" class="sidebar-link {% if request.resolver_match.url_name == 'worker_dashboard' %}active{% endif %}">
+                        <i class="bi bi-grid-1x2-fill"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li class="sidebar-item">
+                    <a href="{% url 'worker_profile' %}" class="sidebar-link {% if request.resolver_match.url_name == 'worker_profile' %}active{% endif %}">
+                        <i class="bi bi-person-lines-fill"></i>
+                        <span>Profile</span>
+                    </a>
+                </li>
+                <li class="sidebar-item mt-4">
+                    <a href="{% url 'worker_logout' %}" class="sidebar-link text-danger">
+                        <i class="bi bi-box-arrow-right"></i>
+                        <span>Logout</span>
+                    </a>
+                </li>
+            </ul>
+        {% elif request.session.delivery_id %}
+            <a href="{% url 'delivery_dashboard' %}" class="sidebar-brand">
+                <i class="bi bi-truck text-success"></i>
+                <span>FarmLink Delivery</span>
+            </a>
+            <ul class="sidebar-menu">
+                <li class="sidebar-item">
+                    <a href="{% url 'delivery_dashboard' %}" class="sidebar-link {% if request.resolver_match.url_name == 'delivery_dashboard' %}active{% endif %}">
+                        <i class="bi bi-grid-1x2-fill"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li class="sidebar-item">
+                    <a href="{% url 'delivery_profile' %}" class="sidebar-link {% if request.resolver_match.url_name == 'delivery_profile' %}active{% endif %}">
+                        <i class="bi bi-person-lines-fill"></i>
+                        <span>Profile</span>
+                    </a>
+                </li>
+                <li class="sidebar-item mt-4">
+                    <a href="{% url 'delivery_logout' %}" class="sidebar-link text-danger">
+                        <i class="bi bi-box-arrow-right"></i>
+                        <span>Logout</span>
+                    </a>
+                </li>
+            </ul>
+        {% else %}
+            <!-- Default Farmer Sidebar -->
+            <a href="{% url 'dashboard' %}" class="sidebar-brand">
+                <i class="bi bi-tree-fill"></i>
+                <span>FarmLink ERP</span>
+            </a>
+            <ul class="sidebar-menu">
+                <li class="sidebar-item">
+                    <a href="{% url 'dashboard' %}" class="sidebar-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                        <i class="bi bi-grid-1x2-fill"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <!-- Products Menu Section -->
+                <li class="sidebar-item">
+                    <a href="{% url 'farmer_products' %}" class="sidebar-link {% if request.resolver_match.url_name == 'farmer_products' %}active{% endif %}">
+                        <i class="bi bi-box-seam"></i>
+                        <span>My Products</span>
+                    </a>
+                </li>
+                <li class="sidebar-item">
+                    <a href="{% url 'farmer_add_product' %}" class="sidebar-link {% if request.resolver_match.url_name == 'farmer_add_product' %}active{% endif %}">
+                        <i class="bi bi-plus-square"></i>
+                        <span>Add Product</span>
+                    </a>
+                </li>
+                <li class="sidebar-item">
+                    <a href="{% url 'farmer_wallet' %}" class="sidebar-link {% if request.resolver_match.url_name == 'farmer_wallet' %}active{% endif %}">
+                        <i class="bi bi-wallet2"></i>
+                        <span>My Wallet</span>
+                    </a>
+                </li>
+                <li class="sidebar-item">
+                    <a href="{% url 'profile' %}" class="sidebar-link {% if request.resolver_match.url_name == 'profile' %}active{% endif %}">
+                        <i class="bi bi-person-lines-fill"></i>
+                        <span>Profile</span>
+                    </a>
+                </li>
+                <li class="sidebar-item mt-4">
+                    <a href="{% url 'logout' %}" class="sidebar-link text-danger">
+                        <i class="bi bi-box-arrow-right"></i>
+                        <span>Logout</span>
+                    </a>
+                </li>
+            </ul>
+        {% endif %}
+
+        <div class="p-3 text-center opacity-50 small border-top border-secondary">
+            v1.0 Phase 2
+        </div>
+    </aside>
+
+    <!-- ERP Main Content Area -->
+    <div class="erp-main">
+        <!-- Top Navigation -->
+        <header class="erp-topbar">
+            <div class="d-flex align-items-center gap-3">
+                <button class="btn btn-sm btn-outline-success d-lg-none" id="sidebarToggle">
+                    <i class="bi bi-list fs-5"></i>
+                </button>
+                <h5 class="topbar-welcome mb-0">
+                    {% if request.session.customer_id %}
+                        Welcome, <span class="text-success fw-bold">{{ request.session.customer_name|default:"Customer" }}</span>
+                    {% elif request.session.worker_id %}
+                        Welcome, <span class="text-success fw-bold">{{ request.session.worker_name|default:"Worker" }}</span>
+                    {% elif request.session.delivery_id %}
+                        Welcome, <span class="text-success fw-bold">{{ request.session.delivery_name|default:"Delivery Person" }}</span>
+                    {% else %}
+                        Welcome, <span class="text-success fw-bold">{{ request.session.farmer_name|default:"Farmer" }}</span>
+                    {% endif %}
+                </h5>
+            </div>
+            <div class="topbar-actions">
+                <a href="#" class="icon-badge-btn" title="Notifications">
+                    <i class="bi bi-bell-fill fs-5"></i>
+                    <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle">
+                        <span class="visually-hidden">New notifications</span>
+                    </span>
+                </a>
+                {% if request.session.customer_id %}
+                    <a href="{% url 'customer_profile' %}" class="icon-badge-btn" title="Profile">
+                        <i class="bi bi-person-circle fs-4"></i>
+                    </a>
+                {% elif request.session.worker_id %}
+                    <a href="{% url 'worker_profile' %}" class="icon-badge-btn" title="Profile">
+                        <i class="bi bi-person-circle fs-4"></i>
+                    </a>
+                {% elif request.session.delivery_id %}
+                    <a href="{% url 'delivery_profile' %}" class="icon-badge-btn" title="Profile">
+                        <i class="bi bi-person-circle fs-4"></i>
+                    </a>
+                {% else %}
+                    <a href="{% url 'profile' %}" class="icon-badge-btn" title="Profile">
+                        <i class="bi bi-person-circle fs-4"></i>
+                    </a>
+                {% endif %}
+            </div>
+        </header>
+
+        <!-- Flash messages inside ERP -->
+        <div class="px-4 pt-3">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show rounded-4 shadow-sm" role="alert">
+                        <i class="bi {% if message.tags == 'success' %}bi-check-circle-fill{% elif message.tags == 'error' %}bi-exclamation-triangle-fill{% else %}bi-info-circle-fill{% endif %} me-2"></i>
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        </div>
+
+        <!-- ERP Page Inner Content -->
+        <main class="erp-content">
+            {% block erp_content %}{% endblock %}
+        </main>
+    </div>
+</div>
+{% endblock layout %}

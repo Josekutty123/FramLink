@@ -1,0 +1,98 @@
+{% extends 'myapp/erp_base.html' %}
+{% load static %}
+
+{% block title %}{% if is_edit %}Edit Product{% else %}Add Product{% endif %} - FarmLink ERP{% endblock %}
+
+{% block erp_content %}
+<div class="container-fluid p-4">
+    <!-- Header Title -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between pb-3 mb-4 border-bottom">
+        <div>
+            <h2 class="fw-bold text-success mb-1">
+                <i class="bi bi-plus-square me-2"></i> {% if is_edit %}Edit Product{% else %}Add New Product{% endif %}
+            </h2>
+            <p class="text-muted mb-0">Fill in details for your agricultural product to make it available for live bargaining.</p>
+        </div>
+        <a href="{% url 'farmer_products' %}" class="btn btn-outline-secondary rounded-pill px-3">
+            <i class="bi bi-arrow-left me-1"></i> Back to My Products
+        </a>
+    </div>
+
+    <!-- Market Closed Warning Notice -->
+    {% if market_settings.status != 'OPEN' and not is_edit %}
+        <div class="card border-danger shadow-sm rounded-4 mb-4">
+            <div class="card-body p-4 text-center">
+                <i class="bi bi-lock-fill text-danger display-4 mb-3 d-block"></i>
+                <h4 class="fw-bold text-danger mb-2">Marketplace Closed</h4>
+                <p class="text-secondary fs-5 mb-3">
+                    The marketplace is currently closed.<br>Please wait until the Administrator opens the market.
+                </p>
+                <a href="{% url 'farmer_products' %}" class="btn btn-outline-danger rounded-pill px-4">
+                    <i class="bi bi-arrow-left me-1"></i> Return to Products
+                </a>
+            </div>
+        </div>
+    {% else %}
+        <!-- Product Entry Form -->
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="card border-0 shadow-sm rounded-4">
+                    <div class="card-header bg-white border-0 pt-4 px-4 pb-0">
+                        <h5 class="fw-bold text-dark mb-0">Product Details</h5>
+                        <p class="text-muted small">Specify quantity, unit type, starting price, and upload a clear product image.</p>
+                    </div>
+                    <div class="card-body p-4">
+                        <form method="POST" enctype="multipart/form-data" action="{% if is_edit %}{% url 'farmer_edit_product' product.product_id %}{% else %}{% url 'farmer_add_product' %}{% endif %}">
+                            {% csrf_token %}
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold text-secondary">Product Name</label>
+                                    {{ form.product_name }}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold text-secondary">Category</label>
+                                    {{ form.category }}
+                                    <small class="text-muted">Enter product category (e.g. Vegetables, Fruits, Dairy Products)</small>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label fw-semibold text-secondary">Description</label>
+                                    {{ form.description }}
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold text-secondary">Quantity</label>
+                                    {{ form.quantity }}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold text-secondary">Unit</label>
+                                    {{ form.unit }}
+                                    <small class="text-muted">Options: Kg, Liter, Pieces</small>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold text-secondary">Price Per Unit (₹)</label>
+                                    {{ form.price_per_unit }}
+                                    <small class="text-muted">Starting price per unit for bargaining</small>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold text-secondary">Upload Image</label>
+                                    {{ form.image }}
+                                    {% if is_edit and product.image %}
+                                        <small class="text-success d-block mt-1">Current image: <a href="{{ product.image.url }}" target="_blank">View Image</a></small>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+                                <a href="{% url 'farmer_products' %}" class="btn btn-light rounded-pill px-4">Cancel</a>
+                                <button type="submit" class="btn btn-success rounded-pill px-5 shadow-sm fw-semibold">
+                                    <i class="bi bi-check-lg me-1"></i> Save Product
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,192 @@
+{% extends 'myapp/admin_base.html' %}
+{% load static %}
+
+{% block title %}Marketplace Management - Admin Portal{% endblock %}
+
+{% block admin_content %}
+<div class="container-fluid p-4">
+    <!-- Header Title -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between pb-3 mb-4 border-bottom">
+        <div>
+            <h2 class="fw-bold text-success mb-1">
+                <i class="bi bi-shop me-2"></i> Marketplace Management
+            </h2>
+            <p class="text-muted mb-0">Control agricultural market status, operating hours, and monitor live trading.</p>
+        </div>
+        <div class="d-flex gap-2 align-items-center mt-3 mt-md-0">
+            <span class="badge bg-secondary fs-6 px-3 py-2 rounded-pill shadow-sm">
+                Market: {{ market_settings.status }}
+            </span>
+            <span class="badge bg-secondary fs-6 px-3 py-2 rounded-pill shadow-sm">
+                Registration: {{ market_settings.product_registration_status }}
+            </span>
+            <span class="badge bg-secondary fs-6 px-3 py-2 rounded-pill shadow-sm">
+                Bargaining: {{ market_settings.bargaining_status }}
+            </span>
+        </div>
+    </div>
+
+    <!-- Status Overview & Configuration Row -->
+    <div class="row g-4 mb-4">
+        <!-- Market Status Banner -->
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm rounded-4 h-100 overflow-hidden" style="background: linear-gradient(135deg, #1b4332 0%, #2d6a4f 100%);">
+                <div class="card-body p-4 text-white position-relative">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <span class="text-uppercase tracking-wider opacity-75 small fw-semibold">Current Operating State</span>
+                        <i class="bi bi-clock-history fs-3 opacity-50"></i>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h6 class="mb-1 opacity-75">Market Status</h6>
+                        {% if market_settings.status == 'OPEN' %}
+                            <h1 class="display-5 fw-bold text-warning mb-0">
+                                <i class="bi bi-patch-check-fill text-warning me-2"></i>OPEN
+                            </h1>
+                        {% else %}
+                            <h1 class="display-5 fw-bold text-white-50 mb-0">
+                                <i class="bi bi-x-circle-fill text-danger me-2"></i>CLOSED
+                            </h1>
+                        {% endif %}
+                    </div>
+
+                    <div class="row g-3 pt-3 border-top border-light border-opacity-25">
+                        <div class="col-4">
+                            <small class="opacity-75 d-block">Market Date</small>
+                            <span class="fw-bold">{{ market_settings.market_date|default:"Not Set" }}</span>
+                        </div>
+                        <div class="col-4">
+                            <small class="opacity-75 d-block">Opening Time</small>
+                            <span class="fw-bold">{{ market_settings.opening_time|default:"Not Set" }}</span>
+                        </div>
+                        <div class="col-4">
+                            <small class="opacity-75 d-block">Closing Time</small>
+                            <span class="fw-bold">{{ market_settings.closing_time|default:"Not Set" }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Quick Action Buttons -->
+                    <div class="d-flex flex-column gap-2 mt-4">
+                        {% if market_settings.status == 'CLOSED' %}
+                            <a href="{% url 'admin_market_action' 'open_market' %}" class="btn btn-success w-100 fw-bold rounded-3 py-3 shadow">
+                                <i class="bi bi-unlock-fill me-1"></i> Open Market <small class="d-block fw-normal">(Farmers can start adding products)</small>
+                            </a>
+                        {% elif market_settings.status == 'OPEN' and market_settings.bargaining_status == 'NOT_STARTED' %}
+                            <a href="{% url 'admin_market_action' 'open_bargaining' %}" class="btn btn-info w-100 fw-bold rounded-3 py-3 shadow">
+                                <i class="bi bi-play-circle-fill me-1"></i> Open Bargaining <small class="d-block fw-normal">(Closes product registration and starts bidding)</small>
+                            </a>
+                        {% elif market_settings.bargaining_status == 'ACTIVE' %}
+                            <a href="{% url 'admin_market_action' 'stop_bargaining' %}" class="btn btn-danger w-100 fw-bold rounded-3 py-3 shadow" onclick="return confirm('Are you sure you want to stop bargaining? This will automatically sell all products to the highest bidders and close the market.');">
+                                <i class="bi bi-stop-circle-fill me-1"></i> Stop Bargaining & Close Market <small class="d-block fw-normal">(Finalizes sales and ends the market cycle)</small>
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Market Configuration Settings Form -->
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-white border-0 pt-4 px-4 pb-0">
+                    <h5 class="fw-bold text-dark mb-0">
+                        <i class="bi bi-sliders text-success me-2"></i> Configure Marketplace Settings
+                    </h5>
+                    <p class="text-muted small">Update official market schedule and operating parameters.</p>
+                </div>
+                <div class="card-body p-4">
+                    <form method="POST" action="{% url 'admin_marketplace' %}">
+                        {% csrf_token %}
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-secondary">Market Status</label>
+                                {{ form.status }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-secondary">Current Market Date</label>
+                                {{ form.market_date }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-secondary">Opening Time</label>
+                                {{ form.opening_time }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-secondary">Closing Time</label>
+                                {{ form.closing_time }}
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+                            <button type="submit" class="btn btn-success px-4 py-2 fw-semibold rounded-3 shadow-sm">
+                                <i class="bi bi-check2-circle me-1"></i> Save Settings
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Products & Monitoring Section -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-header bg-white border-0 pt-4 px-4 pb-0 d-flex justify-content-between align-items-center">
+            <div>
+                <h5 class="fw-bold text-dark mb-0">
+                    <i class="bi bi-box-seam text-success me-2"></i> Active Market Products
+                </h5>
+                <p class="text-muted small">Monitor products listed by farmers across all active bargaining rooms.</p>
+            </div>
+            <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3 py-2 fw-semibold">
+                Total Products: {{ products.count }}
+            </span>
+        </div>
+        <div class="card-body p-4">
+            {% if products %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Product ID</th>
+                                <th>Product Name</th>
+                                <th>Farmer</th>
+                                <th>Quantity & Unit</th>
+                                <th>Starting Price</th>
+                                <th>Status</th>
+                                <th>Bargaining Room</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for p in products %}
+                                <tr>
+                                    <td class="fw-bold text-success">{{ p.product_id }}</td>
+                                    <td class="fw-semibold">{{ p.product_name }}</td>
+                                    <td>{{ p.farmer.full_name }} <span class="text-muted small">({{ p.farmer.farmer_id }})</span></td>
+                                    <td>{{ p.quantity }} {{ p.unit }}</td>
+                                    <td class="fw-bold text-dark">₹{{ p.price_per_unit }} / {{ p.unit }}</td>
+                                    <td>
+                                        {% if p.status == 'AVAILABLE' %}
+                                            <span class="badge bg-success rounded-pill px-3">AVAILABLE</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary rounded-pill px-3">SOLD</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'live_bargaining' p.product_id %}" class="btn btn-sm btn-outline-success rounded-pill px-3">
+                                            <i class="bi bi-eye-fill me-1"></i> Monitor Room
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-4 text-muted">
+                    <i class="bi bi-inbox fs-1 d-block mb-2 text-secondary"></i>
+                    No products currently listed in the marketplace.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,106 @@
+{% extends 'myapp/admin_base.html' %}
+{% load static %}
+
+{% block title %}Admin Wallet & Commissions - FarmLink ERP{% endblock %}
+
+{% block admin_content %}
+<div class="container-fluid p-4">
+    <!-- Header Title -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between pb-3 mb-4 border-bottom">
+        <div>
+            <h2 class="fw-bold text-success mb-1">
+                <i class="bi bi-wallet2 me-2"></i> Administrator Wallet
+            </h2>
+            <p class="text-muted mb-0">Overview of administrator commission funds accumulated from marketplace sales (20% share).</p>
+        </div>
+    </div>
+
+    <!-- Admin Balance Card -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-6 col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 text-white overflow-hidden" style="background: linear-gradient(135deg, #0d5c3a 0%, #198754 100%);">
+                <div class="card-body p-4 position-relative">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="text-uppercase tracking-wider opacity-75 small fw-semibold">Admin Commission Wallet</span>
+                        <i class="bi bi-piggy-bank fs-2 opacity-50"></i>
+                    </div>
+                    <h6 class="opacity-75 mb-1">Total Balance</h6>
+                    <h1 class="display-5 fw-bold text-warning mb-3">₹{{ wallet.balance }}</h1>
+                    <div class="d-flex justify-content-between align-items-center pt-2 border-top border-light border-opacity-25 small opacity-75">
+                        <span>Wallet ID: {{ wallet.wallet_id }}</span>
+                        <span>Last Updated: {{ wallet.updated_at|date:"M d, Y" }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100 p-4 bg-white">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="bg-success bg-opacity-10 text-success p-3 rounded-circle fs-3">
+                        <i class="bi bi-receipt-cutoff"></i>
+                    </div>
+                    <div>
+                        <span class="text-muted small d-block">Completed Sales</span>
+                        <h3 class="fw-bold text-dark mb-0">{{ sales.count }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sales & Commission Distribution Table -->
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-header bg-white border-0 pt-4 px-4 pb-0 d-flex justify-content-between align-items-center">
+            <div>
+                <h5 class="fw-bold text-dark mb-0">
+                    <i class="bi bi-journal-text text-success me-2"></i> Sales & Commission Distribution History
+                </h5>
+                <p class="text-muted small">Detailed record of 80% Farmer / 20% Admin split across all transactions.</p>
+            </div>
+        </div>
+        <div class="card-body p-4">
+            {% if sales %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Sale ID</th>
+                                <th>Product</th>
+                                <th>Farmer (80%)</th>
+                                <th>Customer (Winner)</th>
+                                <th>Total Sale</th>
+                                <th>Farmer Share</th>
+                                <th>Admin 20% Commission</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for s in sales %}
+                                <tr>
+                                    <td class="fw-bold text-success">{{ s.sale_id }}</td>
+                                    <td>
+                                        <span class="fw-semibold">{{ s.product.product_name }}</span>
+                                        <small class="text-muted d-block">{{ s.quantity }} {{ s.product.unit }} @ ₹{{ s.winning_price }}</small>
+                                    </td>
+                                    <td>{{ s.farmer.full_name }}</td>
+                                    <td>{{ s.customer.full_name }}</td>
+                                    <td class="fw-bold">₹{{ s.total_amount }}</td>
+                                    <td class="text-success fw-semibold">₹{{ s.farmer_share }}</td>
+                                    <td class="text-warning fw-bold">+₹{{ s.admin_commission }}</td>
+                                    <td class="text-muted small">{{ s.sale_date|date:"Y-m-d H:i" }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-4 text-muted">
+                    <i class="bi bi-inbox fs-1 d-block mb-2 text-secondary"></i>
+                    No sales transactions completed yet.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

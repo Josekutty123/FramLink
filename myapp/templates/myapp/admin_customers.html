@@ -1,0 +1,70 @@
+{% extends 'myapp/admin_base.html' %}
+{% load static %}
+
+{% block admin_content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold text-success mb-1">Customer Details</h3>
+            <p class="text-muted mb-0">View all registered customers</p>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body p-4">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th scope="col">Customer ID</th>
+                            <th scope="col">Name</th>
+                            <th scope="col">Contact</th>
+                            <th scope="col">Address</th>
+                            <th scope="col">Joined Date</th>
+                            <th scope="col">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for customer in customers %}
+                            <tr>
+                                <td>
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-3">
+                                        <i class="bi bi-person-fill me-1"></i> {{ customer.customer_id }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <h6 class="mb-0 fw-bold">{{ customer.full_name }}</h6>
+                                    <small class="text-muted">{{ customer.gender }}, Age: {{ customer.age }}</small>
+                                </td>
+                                <td>
+                                    <div><i class="bi bi-telephone-fill text-muted me-1"></i> {{ customer.phone }}</div>
+                                    <div><i class="bi bi-envelope-fill text-muted me-1"></i> {{ customer.email }}</div>
+                                </td>
+                                <td>
+                                    <div><i class="bi bi-geo-alt-fill text-danger me-1"></i> {{ customer.place }}</div>
+                                    <small class="text-muted">{{ customer.address }}</small>
+                                </td>
+                                <td>
+                                    {{ customer.joining_date|date:"M d, Y" }}
+                                </td>
+                                <td>
+                                    <a href="{% url 'admin_customer_detail' customer.customer_id %}" class="btn btn-sm btn-outline-success">
+                                        <i class="bi bi-eye-fill me-1"></i> View Details
+                                    </a>
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center py-5">
+                                    <i class="bi bi-people display-4 text-muted mb-3 d-block"></i>
+                                    <h5 class="text-muted">No customers registered yet.</h5>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

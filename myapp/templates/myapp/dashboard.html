@@ -1,0 +1,70 @@
+{% extends 'myapp/erp_base.html' %}
+
+{% block title %}Farmer Dashboard - FarmLink ERP{% endblock %}
+
+{% block erp_content %}
+<div class="container-fluid px-0">
+    <!-- Welcome Header Banner -->
+    <div class="glass-card p-4 p-md-5 mb-4 text-white"
+        style="background: linear-gradient(135deg, #1b4332 0%, #2d6a4f 100%);">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <span
+                    class="badge bg-success bg-opacity-25 text-white border border-success rounded-pill px-3 py-2 mb-3">
+                    <i class="bi bi-patch-check-fill text-success me-1"></i> FarmLink ERP
+                </span>
+                <h2 class="fw-bold mb-2">Welcome, {{ farmer.full_name }}!</h2>
+                <p class="mb-0 text-white-50 lead fs-6">
+                    Agricultural Resource & Marketplace Management System. Access your profile and ERP management
+                    features from the sidebar menu.
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                <a href="{% url 'profile' %}" class="btn btn-farmlink-outline text-white border-white">
+                    <i class="bi bi-person-lines-fill me-1"></i> View Profile
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Navigation Cards -->
+    <div class="row g-4">
+        <div class="col-md-6">
+            <div class="profile-card p-4 h-100">
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <div class="stat-icon green">
+                        <i class="bi bi-person-circle"></i>
+                    </div>
+                    <div>
+                        <h5 class="fw-bold mb-1">Farmer Profile</h5>
+                        <p class="text-muted small mb-0">View credentials and update personal details like contact
+                            number, address, and location.</p>
+                    </div>
+                </div>
+                <a href="{% url 'profile' %}" class="btn btn-outline-success btn-sm rounded-pill px-3 mt-2">
+                    Go to Profile <i class="bi bi-arrow-right ms-1"></i>
+                </a>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="profile-card p-4 h-100">
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <div class="stat-icon mint">
+                        <i class="bi bi-shield-check"></i>
+                    </div>
+                    <div>
+                        <h5 class="fw-bold mb-1">System Security</h5>
+                        <p class="text-muted small mb-0">Your account is securely verified and password is encrypted
+                            with Django security.</p>
+                    </div>
+                </div>
+                <span
+                    class="badge bg-success bg-opacity-10 text-success border border-success px-3 py-2 rounded-pill mt-2">
+                    <i class="bi bi-check-circle-fill me-1"></i> Account Active
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

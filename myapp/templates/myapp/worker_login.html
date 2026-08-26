@@ -1,0 +1,63 @@
+{% extends 'myapp/base.html' %}
+{% load static %}
+
+{% block title %}Worker Login - FarmLink ERP{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-5 col-md-8">
+            <div class="form-card shadow-lg border-0">
+                <div class="form-header">
+                    <h3 class="fw-bold mb-1"><i class="bi bi-box-arrow-in-right me-2"></i> Worker Login</h3>
+                    <p class="mb-0 opacity-75">Access your ERP Dashboard</p>
+                </div>
+                <div class="p-4 p-md-5">
+                    {% if error_message %}
+                        <div class="alert alert-danger rounded-4 mb-4 d-flex align-items-center" role="alert">
+                            <i class="bi bi-exclamation-octagon-fill me-2 fs-5"></i>
+                            <div>{{ error_message }}</div>
+                        </div>
+                    {% endif %}
+
+                    <form method="post" action="{% url 'worker_login' %}" novalidate>
+                        {% csrf_token %}
+
+                        <div class="mb-4">
+                            <label for="{{ form.email.id_for_label }}" class="form-label">Email Address</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0 rounded-start-3 text-success">
+                                    <i class="bi bi-envelope-fill"></i>
+                                </span>
+                                {{ form.email }}
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="{{ form.password.id_for_label }}" class="form-label">Password</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0 rounded-start-3 text-success">
+                                    <i class="bi bi-lock-fill"></i>
+                                </span>
+                                {{ form.password }}
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-farmlink-primary btn-lg">
+                                <i class="bi bi-arrow-right-circle-fill me-2"></i> Login to Dashboard
+                            </button>
+                        </div>
+                    </form>
+
+                    <div class="text-center mt-4 pt-2">
+                        <p class="mb-0 text-muted">Don't have an account? 
+                            <a href="{% url 'worker_register' %}" class="text-success fw-bold text-decoration-none">Register Here</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

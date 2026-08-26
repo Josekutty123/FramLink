@@ -1,0 +1,59 @@
+{% extends 'myapp/base.html' %}
+{% load static %}
+
+{% block title %}Customer Access Required - Live Bargaining{% endblock %}
+
+{% block content %}
+<section class="py-5 bg-light min-vh-100 d-flex align-items-center">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-6 col-md-8">
+                <div class="card border-0 shadow-lg rounded-5 text-center p-5 bg-white">
+                    <div class="bg-warning bg-opacity-10 text-warning rounded-circle p-4 d-inline-block mx-auto mb-4" style="width: 90px; height: 90px;">
+                        <i class="bi bi-shield-lock-fill display-4"></i>
+                    </div>
+
+                    <h3 class="fw-bold text-dark mb-3">Customer Access Required</h3>
+
+                    <p class="text-secondary fs-5 leading-relaxed mb-4">
+                        Only registered customers can participate in live bargaining.
+                    </p>
+
+                    <!-- Product Snapshot -->
+                    {% if product %}
+                        <div class="bg-light p-3 rounded-4 mb-4 text-start d-flex align-items-center gap-3 border">
+                            {% if product.image %}
+                                <img src="{{ product.image.url }}" alt="{{ product.product_name }}" class="rounded-3" style="width: 60px; height: 60px; object-fit: cover;">
+                            {% else %}
+                                <div class="bg-secondary bg-opacity-10 rounded-3 p-3 text-secondary">
+                                    <i class="bi bi-box-seam fs-3"></i>
+                                </div>
+                            {% endif %}
+                            <div>
+                                <h6 class="fw-bold text-dark mb-1">{{ product.product_name }}</h6>
+                                <span class="text-muted small">Quantity: {{ product.quantity }} {{ product.unit }} | Starting Price: ₹{{ product.price_per_unit }}/{{ product.unit }}</span>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <!-- Action Buttons -->
+                    <div class="d-grid gap-3 col-10 mx-auto">
+                        <a href="{% url 'customer_login' %}" class="btn btn-farmlink-primary py-3 rounded-pill shadow-lg fw-bold fs-6">
+                            <i class="bi bi-box-arrow-in-right me-2"></i> Customer Login
+                        </a>
+                        <a href="{% url 'customer_register' %}" class="btn btn-farmlink-outline py-3 rounded-pill fw-bold fs-6">
+                            <i class="bi bi-person-plus-fill me-2"></i> Customer Registration
+                        </a>
+                    </div>
+
+                    <div class="mt-4 pt-3 border-top">
+                        <a href="{% url 'explore_products' %}" class="text-secondary text-decoration-none small">
+                            <i class="bi bi-arrow-left me-1"></i> Back to Explore Products
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
