@@ -1,0 +1,66 @@
+{% extends 'myapp/erp_base.html' %}
+{% block title %}Wage Negotiation{% endblock %}
+{% block erp_content %}
+<div class="container-fluid px-4 py-5">
+    <h2 class="mb-4">Wage Negotiation ({{ worker_request.request_id }})</h2>
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+    
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card shadow-sm mb-4 border-0 rounded-4">
+                <div class="card-header bg-light"><strong>Bargaining History</strong></div>
+                <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                    {% for offer in offers %}
+                        <div class="alert {% if offer.offered_by == 'FARMER' %}alert-primary text-end{% else %}alert-secondary text-start{% endif %}">
+                            <strong>{{ offer.offered_by }}</strong> offered ₹{{ offer.amount_per_worker_per_day }}/day
+                            <br><small>{{ offer.created_at|date:"M d, H:i" }}</small>
+                            {% if offer.status == 'ACTIVE' and offer.offered_by == 'ADMIN' %}
+                                <div class="mt-2">
+                                    <form method="post" style="display:inline;">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="accept">
+                                        <input type="hidden" name="offer_id" value="{{ offer.offer_id }}">
+                                        <button type="submit" class="btn btn-sm btn-success">Accept Offer</button>
+                                    </form>
+                                </div>
+                            {% elif offer.status == 'ACCEPTED' %}
+                                <span class="badge bg-success mt-2">ACCEPTED</span>
+                            {% elif offer.status == 'REJECTED' %}
+                                <span class="badge bg-danger mt-2">REJECTED</span>
+                            {% endif %}
+                        </div>
+                    {% empty %}
+                        <p class="text-muted">No offers yet.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            {% if worker_request.status != 'WAGE_AGREED' %}
+            <div class="card shadow-sm border-0 rounded-4">
+                <div class="card-header bg-light"><strong>Make an Offer</strong></div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="offer">
+                        {{ form.as_p }}
+                        <button type="submit" class="btn btn-primary">Send Counter-Offer</button>
+                    </form>
+                </div>
+            </div>
+            {% else %}
+            <div class="alert alert-success rounded-4">
+                <strong>Wage Agreed:</strong> ₹{{ worker_request.requested_wage }} per worker per day.
+                <br>
+                Waiting for Admin to assign workers.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

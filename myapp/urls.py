@@ -21,6 +21,7 @@ urlpatterns = [
     path('customer/my-bids/', views.customer_bids_view, name='customer_bids'),
     path('customer/profile/', views.customer_profile_view, name='customer_profile'),
     path('customer/logout/', views.customer_logout_view, name='customer_logout'),
+    path('customer/confirm-delivery/<str:order_id>/', views.customer_confirm_delivery_view, name='customer_confirm_delivery'),
 
     # Worker Module URLs
     path('worker/register/', views.worker_register_view, name='worker_register'),
@@ -73,4 +74,25 @@ urlpatterns = [
     # API endpoints for Live Bargaining
     path('api/place-bid/<str:product_id>/', views.api_place_bid_view, name='api_place_bid'),
     path('api/bids/<str:product_id>/', views.api_get_bids_view, name='api_get_bids'),
+    
+    # Worker Flow Admin URLs
+    path('admin/workers/', views.admin_workers_view, name='admin_workers'),
+    path('admin/workers/add/', views.admin_add_worker_view, name='admin_add_worker'),
+    path('admin/workers/requests/', views.admin_worker_requests_view, name='admin_worker_requests'),
+    path('admin/workers/requests/<str:request_id>/negotiate/', views.admin_wage_negotiation_view, name='admin_wage_negotiation'),
+    path('admin/workers/requests/<str:request_id>/assign/', views.admin_assign_workers_view, name='admin_assign_workers'),
+    path('admin/workers/settlements/', views.admin_salary_settlements_view, name='admin_salary_settlements'),
+    path('admin/workers/settlements/<str:settlement_id>/pay/', views.admin_pay_worker_view, name='admin_pay_worker'),
+
+    # Worker Flow Farmer URLs
+    path('farmer/workers/requests/', views.farmer_worker_requests_view, name='farmer_worker_requests'),
+    path('farmer/workers/request/', views.farmer_request_workers_view, name='farmer_request_workers'),
+    path('farmer/workers/requests/<str:request_id>/negotiate/', views.farmer_wage_negotiation_view, name='farmer_wage_negotiation'),
+    path('farmer/workers/requests/<str:request_id>/task/create/', views.farmer_create_task_view, name='farmer_create_task'),
+    path('farmer/workers/tasks/', views.farmer_tasks_view, name='farmer_tasks'),
+    path('farmer/workers/tasks/<str:task_id>/confirm/', views.farmer_confirm_task_view, name='farmer_confirm_task'),
+    path('farmer/workers/tasks/<str:task_id>/payment/', views.farmer_worker_payment_view, name='farmer_worker_payment'),
+    
+    # Worker Task update url
+    path('worker/task/<str:task_id>/complete/', views.worker_mark_task_completed_view, name='worker_mark_task_completed'),
 ]

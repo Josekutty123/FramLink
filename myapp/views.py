@@ -4,16 +4,19 @@ from django.contrib import messages
 from django.contrib.auth.hashers import make_password, check_password
 from django.utils import timezone
 from django.http import JsonResponse
+from django.db import transaction
 from .models import (
     Farmer, Admin, Customer, Worker, Delivery, DeliveryOrder,
-    MarketSettings, Product, BargainingBid, FarmerWallet, AdminWallet, Sale
+    MarketSettings, Product, BargainingBid, FarmerWallet, AdminWallet, Sale,
+    WorkerRequest, WorkerWageOffer, WorkerTask, WorkerSalarySettlement, WalletTransaction
 )
 from .forms import (
     FarmerRegistrationForm, FarmerLoginForm, FarmerProfileForm, AdminLoginForm,
     CustomerRegistrationForm, CustomerLoginForm, CustomerProfileForm,
     WorkerRegistrationForm, WorkerLoginForm, WorkerProfileForm,
     DeliveryRegistrationForm, DeliveryLoginForm, DeliveryProfileForm, AdminDeliveryForm,
-    MarketSettingsForm, ProductForm, BidForm
+    MarketSettingsForm, ProductForm, BidForm,
+    AdminWorkerForm, WorkerRequestForm, WorkerWageOfferForm, WorkerTaskForm
 )
 
 
@@ -307,6 +310,35 @@ def customer_dashboard_view(request):
     return render(request, 'myapp/customer_dashboard.html', context)
 
 
+def customer_confirm_delivery_view(request, order_id):
+    active_redirect = get_active_session_redirect(request)
+    if active_redirect and not request.session.get('customer_id'):
+        messages.error(request, "Access denied.")
+        return active_redirect
+
+    customer = get_current_customer(request)
+    if not customer:
+        messages.error(request, "Please log in to confirm delivery.")
+        return redirect('customer_login')
+
+    if request.method == 'POST':
+        order = get_object_or_404(DeliveryOrder, order_id=order_id, sale__customer=customer)
+        if order.status == 'AWAITING_CUSTOMER_CONFIRMATION':
+            order.status = 'DELIVERED'
+            order.customer_confirmation_date = timezone.now()
+            order.save()
+
+            if order.delivery_person:
+                order.delivery_person.status = 'AVAILABLE'
+                order.delivery_person.save()
+
+            messages.success(request, "Product receipt confirmed successfully!")
+        else:
+            messages.error(request, "This order is not awaiting confirmation.")
+    
+    return redirect('customer_dashboard')
+
+
 def customer_profile_view(request):
     active_redirect = get_active_session_redirect(request)
     if active_redirect and not request.session.get('customer_id'):
@@ -444,6 +476,8 @@ def worker_dashboard_view(request):
     context = {
         'worker': worker,
         'profile_status': 'Active',
+        'tasks': worker.tasks.all().order_by('-created_at'),
+        'settlements': worker.salary_settlements.all().order_by('-created_at')
     }
     return render(request, 'myapp/worker_dashboard.html', context)
 
@@ -552,9 +586,6 @@ def delivery_update_status_view(request, order_id):
         if new_status in [s[0] for s in DeliveryOrder.STATUS_CHOICES]:
             order.status = new_status
             order.save()
-            if new_status == 'DELIVERED':
-                delivery.status = 'AVAILABLE'
-                delivery.save()
             messages.success(request, f"Delivery status updated to {new_status}")
     
     return redirect('delivery_dashboard')
@@ -1298,6 +1329,16 @@ def api_place_bid_view(request, product_id):
     if bid_price <= 0:
         return JsonResponse({'error': 'Bid price must be greater than 0.'}, status=400)
 
+    # Validate against highest bid or starting price
+    highest_bid = BargainingBid.objects.filter(product=product).order_by('-bid_price_per_unit').first()
+    
+    if highest_bid:
+        if bid_price <= highest_bid.bid_price_per_unit:
+            return JsonResponse({'error': f'Bid must be higher than the current highest bid of ₹{highest_bid.bid_price_per_unit}.'}, status=400)
+    else:
+        if bid_price <= product.price_per_unit:
+            return JsonResponse({'error': f'Bid must be higher than the starting price of ₹{product.price_per_unit}.'}, status=400)
+
     # Save new bid
     new_bid = BargainingBid.objects.create(
         product=product,
@@ -1397,3 +1438,442 @@ def admin_live_rooms_view(request):
         'market_settings': market_settings,
     }
     return render(request, 'myapp/admin_live_rooms.html', context)
+
+# ====================================================
+# ADMIN WORKER MANAGEMENT VIEWS
+# ====================================================
+
+def admin_workers_view(request):
+    admin = get_current_admin(request)
+    if not admin:
+        return redirect('admin_login')
+        
+    workers = Worker.objects.all().order_by('-joining_date')
+    return render(request, 'myapp/admin_workers.html', {'admin': admin, 'workers': workers})
+
+def admin_add_worker_view(request):
+    admin = get_current_admin(request)
+    if not admin:
+        return redirect('admin_login')
+        
+    if request.method == 'POST':
+        form = AdminWorkerForm(request.POST)
+        if form.is_valid():
+            worker = form.save(commit=False)
+            worker.password = make_password(form.cleaned_data['password'])
+            worker.save()
+            messages.success(request, f"Worker {worker.worker_id} added successfully.")
+            return redirect('admin_workers')
+    else:
+        form = AdminWorkerForm()
+        
+    return render(request, 'myapp/admin_add_worker.html', {'admin': admin, 'form': form})
+
+def admin_worker_requests_view(request):
+    admin = get_current_admin(request)
+    if not admin:
+        return redirect('admin_login')
+        
+    requests = WorkerRequest.objects.all().order_by('-created_at')
+    return render(request, 'myapp/admin_worker_requests.html', {'admin': admin, 'requests': requests})
+
+def admin_wage_negotiation_view(request, request_id):
+    admin = get_current_admin(request)
+    if not admin:
+        return redirect('admin_login')
+        
+    worker_request = get_object_or_404(WorkerRequest, request_id=request_id)
+    offers = worker_request.wage_offers.all().order_by('created_at')
+    
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'offer':
+            form = WorkerWageOfferForm(request.POST)
+            if form.is_valid():
+                offer = form.save(commit=False)
+                offer.worker_request = worker_request
+                offer.offered_by = 'ADMIN'
+                offer.save()
+                
+                worker_request.wage_offers.exclude(id=offer.id).filter(status='ACTIVE').update(status='REJECTED')
+                
+                worker_request.status = 'WAGE_NEGOTIATION'
+                worker_request.save()
+                messages.success(request, "Wage offer sent to farmer.")
+                return redirect('admin_wage_negotiation', request_id=request_id)
+        elif action == 'accept':
+            offer_id = request.POST.get('offer_id')
+            offer = get_object_or_404(WorkerWageOffer, offer_id=offer_id)
+            offer.status = 'ACCEPTED'
+            offer.save()
+            
+            worker_request.requested_wage = offer.amount_per_worker_per_day
+            worker_request.status = 'WAGE_AGREED'
+            worker_request.save()
+            
+            worker_request.wage_offers.exclude(id=offer.id).update(status='REJECTED')
+            messages.success(request, f"Wage accepted: ₹{offer.amount_per_worker_per_day}/day.")
+            return redirect('admin_worker_requests')
+            
+    form = WorkerWageOfferForm()
+    return render(request, 'myapp/admin_wage_negotiation.html', {
+        'admin': admin,
+        'worker_request': worker_request,
+        'offers': offers,
+        'form': form
+    })
+
+def admin_assign_workers_view(request, request_id):
+    admin = get_current_admin(request)
+    if not admin:
+        return redirect('admin_login')
+        
+    worker_request = get_object_or_404(WorkerRequest, request_id=request_id)
+    if worker_request.status != 'WAGE_AGREED':
+        messages.error(request, "Cannot assign workers yet. Wage is not agreed.")
+        return redirect('admin_worker_requests')
+        
+    available_workers = Worker.objects.filter(status='AVAILABLE')
+    
+    if request.method == 'POST':
+        selected_worker_ids = request.POST.getlist('worker_ids')
+        if len(selected_worker_ids) != worker_request.num_workers:
+            messages.error(request, f"Please select exactly {worker_request.num_workers} workers.")
+        else:
+            total_wage = worker_request.requested_wage * worker_request.num_workers * worker_request.duration_days
+            
+            with transaction.atomic():
+                task = WorkerTask.objects.create(
+                    farmer=worker_request.farmer,
+                    worker_request=worker_request,
+                    work_description=worker_request.work_description,
+                    location=worker_request.location,
+                    start_date=worker_request.start_date,
+                    duration_days=worker_request.duration_days,
+                    daily_wage=worker_request.requested_wage,
+                    total_salary=total_wage,
+                    status='ASSIGNED'
+                )
+                
+                workers_to_assign = Worker.objects.filter(worker_id__in=selected_worker_ids)
+                for w in workers_to_assign:
+                    w.status = 'ASSIGNED'
+                    w.save()
+                    task.workers.add(w)
+                    
+                worker_request.status = 'WORKERS_ASSIGNED'
+                worker_request.save()
+                
+            messages.success(request, f"Assigned {worker_request.num_workers} workers to request {worker_request.request_id}.")
+            return redirect('admin_worker_requests')
+            
+    return render(request, 'myapp/admin_assign_workers.html', {
+        'admin': admin,
+        'worker_request': worker_request,
+        'available_workers': available_workers
+    })
+
+def admin_salary_settlements_view(request):
+    admin = get_current_admin(request)
+    if not admin:
+        return redirect('admin_login')
+        
+    settlements = WorkerSalarySettlement.objects.all().order_by('-created_at')
+    return render(request, 'myapp/admin_salary_settlements.html', {'admin': admin, 'settlements': settlements})
+
+def admin_pay_worker_view(request, settlement_id):
+    admin = get_current_admin(request)
+    if not admin:
+        return redirect('admin_login')
+        
+    settlement = get_object_or_404(WorkerSalarySettlement, settlement_id=settlement_id)
+    if settlement.payment_status != 'PAID_TO_ADMIN':
+        messages.error(request, "Farmer has not paid the settlement amount yet.")
+        return redirect('admin_salary_settlements')
+        
+    with transaction.atomic():
+        admin_wallet, _ = AdminWallet.objects.select_for_update().get_or_create(admin=admin)
+        if admin_wallet.balance < settlement.individual_salary:
+            messages.error(request, "Insufficient admin wallet balance.")
+            return redirect('admin_salary_settlements')
+            
+        prev_balance = admin_wallet.balance
+        admin_wallet.balance -= settlement.individual_salary
+        admin_wallet.save()
+        
+        settlement.payment_status = 'PAID'
+        settlement.paid_date = timezone.now()
+        settlement.save()
+        
+        worker = settlement.worker
+        active_tasks = worker.tasks.exclude(status='COMPLETED').count()
+        if active_tasks == 0:
+            worker.status = 'AVAILABLE'
+            worker.save()
+            
+        WalletTransaction.objects.create(
+            admin=admin,
+            worker=worker,
+            worker_settlement=settlement,
+            amount=settlement.individual_salary,
+            transaction_type='WORKER_SALARY_DISBURSE',
+            prev_admin_balance=prev_balance,
+            new_admin_balance=admin_wallet.balance
+        )
+        
+    messages.success(request, f"Salary ₹{settlement.individual_salary} paid to {worker.full_name}.")
+    return redirect('admin_salary_settlements')
+
+
+# ====================================================
+# FARMER WORKER MANAGEMENT VIEWS
+# ====================================================
+
+def farmer_worker_requests_view(request):
+    farmer = get_current_farmer(request)
+    if not farmer:
+        return redirect('farmer_login')
+        
+    requests = farmer.worker_requests.all().order_by('-created_at')
+    return render(request, 'myapp/farmer_worker_requests.html', {'farmer': farmer, 'requests': requests})
+
+def farmer_request_workers_view(request):
+    farmer = get_current_farmer(request)
+    if not farmer:
+        return redirect('farmer_login')
+        
+    if request.method == 'POST':
+        form = WorkerRequestForm(request.POST)
+        if form.is_valid():
+            worker_req = form.save(commit=False)
+            worker_req.farmer = farmer
+            worker_req.save()
+            
+            if worker_req.requested_wage:
+                WorkerWageOffer.objects.create(
+                    worker_request=worker_req,
+                    offered_by='FARMER',
+                    amount_per_worker_per_day=worker_req.requested_wage,
+                    status='ACTIVE'
+                )
+                worker_req.status = 'WAGE_NEGOTIATION'
+                worker_req.save()
+                
+            messages.success(request, "Worker request submitted successfully.")
+            return redirect('farmer_worker_requests')
+    else:
+        form = WorkerRequestForm()
+        
+    return render(request, 'myapp/farmer_request_workers.html', {'farmer': farmer, 'form': form})
+
+def farmer_wage_negotiation_view(request, request_id):
+    farmer = get_current_farmer(request)
+    if not farmer:
+        return redirect('farmer_login')
+        
+    worker_request = get_object_or_404(WorkerRequest, request_id=request_id, farmer=farmer)
+    offers = worker_request.wage_offers.all().order_by('created_at')
+    
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'offer':
+            form = WorkerWageOfferForm(request.POST)
+            if form.is_valid():
+                offer = form.save(commit=False)
+                offer.worker_request = worker_request
+                offer.offered_by = 'FARMER'
+                offer.save()
+                
+                worker_request.wage_offers.exclude(id=offer.id).filter(status='ACTIVE').update(status='REJECTED')
+                
+                worker_request.status = 'WAGE_NEGOTIATION'
+                worker_request.save()
+                messages.success(request, "Counter-offer sent to Admin.")
+                return redirect('farmer_wage_negotiation', request_id=request_id)
+        elif action == 'accept':
+            offer_id = request.POST.get('offer_id')
+            offer = get_object_or_404(WorkerWageOffer, offer_id=offer_id)
+            offer.status = 'ACCEPTED'
+            offer.save()
+            
+            worker_request.requested_wage = offer.amount_per_worker_per_day
+            worker_request.status = 'WAGE_AGREED'
+            worker_request.save()
+            
+            worker_request.wage_offers.exclude(id=offer.id).update(status='REJECTED')
+            messages.success(request, f"Wage accepted: ₹{offer.amount_per_worker_per_day}/day.")
+            return redirect('farmer_worker_requests')
+            
+    form = WorkerWageOfferForm()
+    return render(request, 'myapp/farmer_wage_negotiation.html', {
+        'farmer': farmer,
+        'worker_request': worker_request,
+        'offers': offers,
+        'form': form
+    })
+
+def farmer_tasks_view(request):
+    farmer = get_current_farmer(request)
+    if not farmer:
+        return redirect('farmer_login')
+        
+    tasks = farmer.worker_tasks.all().order_by('-created_at')
+    return render(request, 'myapp/farmer_tasks.html', {'farmer': farmer, 'tasks': tasks})
+
+def farmer_create_task_view(request, request_id):
+    farmer = get_current_farmer(request)
+    if not farmer:
+        return redirect('farmer_login')
+        
+    worker_request = get_object_or_404(WorkerRequest, request_id=request_id, farmer=farmer)
+    if worker_request.status != 'WORKERS_ASSIGNED':
+        messages.error(request, "Workers are not yet assigned.")
+        return redirect('farmer_worker_requests')
+        
+    task = worker_request.task
+    
+    if request.method == 'POST':
+        form = WorkerTaskForm(request.POST, instance=task)
+        if form.is_valid():
+            updated_task = form.save(commit=False)
+            updated_task.status = 'IN_PROGRESS'
+            updated_task.total_salary = updated_task.daily_wage * updated_task.workers.count() * updated_task.duration_days
+            updated_task.save()
+            
+            for w in updated_task.workers.all():
+                w.status = 'BUSY'
+                w.save()
+                
+            worker_request.status = 'TASK_CREATED'
+            worker_request.save()
+            
+            messages.success(request, "Task started successfully.")
+            return redirect('farmer_tasks')
+    else:
+        form = WorkerTaskForm(instance=task)
+        
+    return render(request, 'myapp/farmer_create_task.html', {'farmer': farmer, 'form': form, 'task': task})
+
+def farmer_confirm_task_view(request, task_id):
+    farmer = get_current_farmer(request)
+    if not farmer:
+        return redirect('farmer_login')
+        
+    task = get_object_or_404(WorkerTask, task_id=task_id, farmer=farmer)
+    
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'confirm':
+            with transaction.atomic():
+                task.status = 'COMPLETED'
+                task.save()
+                
+                workers = task.workers.all()
+                for w in workers:
+                    individual_salary = task.daily_wage * task.duration_days
+                    WorkerSalarySettlement.objects.create(
+                        farmer=farmer,
+                        worker_request=task.worker_request,
+                        worker_task=task,
+                        worker=w,
+                        duration_days=task.duration_days,
+                        daily_wage=task.daily_wage,
+                        individual_salary=individual_salary,
+                        total_settlement_amount=task.total_salary,
+                        payment_status='PAYMENT_PENDING'
+                    )
+                task.worker_request.status = 'COMPLETED'
+                task.worker_request.save()
+                
+            messages.success(request, "Task confirmed. Please proceed to payment.")
+            return redirect('farmer_worker_payment', task_id=task.task_id)
+            
+        elif action == 'reject':
+            task.status = 'IN_PROGRESS'
+            task.save()
+            messages.warning(request, "Task rejected. Workers notified to continue.")
+            return redirect('farmer_tasks')
+
+    return redirect('farmer_tasks')
+
+def farmer_worker_payment_view(request, task_id):
+    farmer = get_current_farmer(request)
+    if not farmer:
+        return redirect('farmer_login')
+        
+    task = get_object_or_404(WorkerTask, task_id=task_id, farmer=farmer)
+    settlements = task.settlements.filter(payment_status='PAYMENT_PENDING')
+    
+    if not settlements.exists():
+        messages.info(request, "No pending payments for this task.")
+        return redirect('farmer_tasks')
+        
+    total_required = task.total_salary
+    wallet, _ = FarmerWallet.objects.get_or_create(farmer=farmer)
+    
+    if request.method == 'POST':
+        if wallet.balance < total_required:
+            messages.error(request, f"Insufficient wallet balance. Please add ₹{total_required - wallet.balance} to your wallet.")
+        else:
+            with transaction.atomic():
+                wallet = FarmerWallet.objects.select_for_update().get(id=wallet.id)
+                if wallet.balance < total_required:
+                    messages.error(request, "Insufficient wallet balance.")
+                    return redirect('farmer_worker_payment', task_id=task_id)
+                
+                admin = Admin.objects.first()
+                admin_wallet, _ = AdminWallet.objects.select_for_update().get_or_create(admin=admin)
+                
+                prev_farmer_bal = wallet.balance
+                prev_admin_bal = admin_wallet.balance
+                
+                wallet.balance -= total_required
+                wallet.save()
+                
+                admin_wallet.balance += total_required
+                admin_wallet.save()
+                
+                for s in settlements:
+                    s.payment_status = 'PAID_TO_ADMIN'
+                    s.save()
+                    
+                    WalletTransaction.objects.create(
+                        farmer=farmer,
+                        admin=admin,
+                        worker_settlement=s,
+                        amount=s.individual_salary,
+                        transaction_type='WORKER_SALARY_PAYMENT',
+                        prev_farmer_balance=prev_farmer_bal,
+                        new_farmer_balance=wallet.balance,
+                        prev_admin_balance=prev_admin_bal,
+                        new_admin_balance=admin_wallet.balance
+                    )
+                    
+            messages.success(request, f"Payment of ₹{total_required} completed successfully.")
+            return redirect('farmer_tasks')
+            
+    return render(request, 'myapp/farmer_worker_payment.html', {
+        'farmer': farmer,
+        'task': task,
+        'wallet': wallet,
+        'total_required': total_required
+    })
+
+
+# ====================================================
+# WORKER VIEWS
+# ====================================================
+
+def worker_mark_task_completed_view(request, task_id):
+    worker = get_current_worker(request)
+    if not worker:
+        return redirect('worker_login')
+        
+    task = get_object_or_404(WorkerTask, task_id=task_id, workers=worker)
+    
+    if request.method == 'POST':
+        task.status = 'AWAITING_FARMER_CONFIRMATION'
+        task.save()
+        messages.success(request, "Work marked as completed. Waiting for farmer confirmation.")
+        
+    return redirect('worker_dashboard')

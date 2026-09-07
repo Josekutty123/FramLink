@@ -58,6 +58,24 @@
                 </a>
             </li>
             <li class="sidebar-item">
+                <a href="{% url 'admin_workers' %}" class="sidebar-link {% if request.resolver_match.url_name == 'admin_workers' or request.resolver_match.url_name == 'admin_add_worker' %}active{% endif %}">
+                    <i class="bi bi-person-badge me-2"></i>
+                    <span>Workers</span>
+                </a>
+            </li>
+            <li class="sidebar-item">
+                <a href="{% url 'admin_worker_requests' %}" class="sidebar-link {% if request.resolver_match.url_name == 'admin_worker_requests' or request.resolver_match.url_name == 'admin_wage_negotiation' or request.resolver_match.url_name == 'admin_assign_workers' %}active{% endif %}">
+                    <i class="bi bi-card-list me-2"></i>
+                    <span>Worker Requests</span>
+                </a>
+            </li>
+            <li class="sidebar-item">
+                <a href="{% url 'admin_salary_settlements' %}" class="sidebar-link {% if request.resolver_match.url_name == 'admin_salary_settlements' %}active{% endif %}">
+                    <i class="bi bi-cash-coin me-2"></i>
+                    <span>Worker Settlements</span>
+                </a>
+            </li>
+            <li class="sidebar-item">
                 <a href="{% url 'admin_deliveries' %}" class="sidebar-link {% if request.resolver_match.url_name == 'admin_deliveries' or request.resolver_match.url_name == 'admin_add_delivery' or request.resolver_match.url_name == 'admin_edit_delivery' %}active{% endif %}">
                     <i class="bi bi-truck me-2"></i>
                     <span>Delivery Management</span>
@@ -73,7 +91,7 @@
         </ul>
 
         <div class="p-3 text-center opacity-50 small border-top border-secondary">
-            FarmLink ERP v1.0 &copy; Admin
+            FarmLink ERP . Admin
         </div>
     </aside>
 

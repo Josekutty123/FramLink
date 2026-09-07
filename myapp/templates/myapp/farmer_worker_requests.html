@@ -1,0 +1,51 @@
+{% extends 'myapp/erp_base.html' %}
+{% block title %}My Worker Requests{% endblock %}
+{% block erp_content %}
+<div class="container-fluid px-4 py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>My Worker Requests</h2>
+        <a href="{% url 'farmer_request_workers' %}" class="btn btn-success">Request New Workers</a>
+    </div>
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+    <div class="card shadow-sm border-0 rounded-4">
+        <div class="card-body">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Request ID</th>
+                        <th>Workers</th>
+                        <th>Work</th>
+                        <th>Duration</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for req in requests %}
+                    <tr>
+                        <td>{{ req.request_id }}</td>
+                        <td>{{ req.num_workers }}</td>
+                        <td>{{ req.work_description|truncatechars:30 }}</td>
+                        <td>{{ req.duration_days }} days</td>
+                        <td><span class="badge bg-secondary">{{ req.status }}</span></td>
+                        <td>
+                            {% if req.status == 'PENDING' or req.status == 'WAGE_NEGOTIATION' %}
+                            <a href="{% url 'farmer_wage_negotiation' req.request_id %}" class="btn btn-sm btn-info">Negotiate Wage</a>
+                            {% elif req.status == 'WORKERS_ASSIGNED' %}
+                            <a href="{% url 'farmer_create_task' req.request_id %}" class="btn btn-sm btn-primary">Create Task</a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="6" class="text-center">No worker requests found.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

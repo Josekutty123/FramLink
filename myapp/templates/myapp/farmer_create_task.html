@@ -1,0 +1,28 @@
+{% extends 'myapp/erp_base.html' %}
+{% block title %}Create Task{% endblock %}
+{% block erp_content %}
+<div class="container-fluid px-4 py-5">
+    <h2 class="mb-4">Create Task for {{ task.worker_request.request_id }}</h2>
+    
+    <div class="alert alert-info rounded-4">
+        <strong>Workers Assigned:</strong>
+        <ul>
+            {% for w in task.workers.all %}
+            <li>{{ w.worker_id }} - {{ w.full_name }}</li>
+            {% endfor %}
+        </ul>
+        <strong>Agreed Daily Wage:</strong> ₹{{ task.daily_wage }}
+    </div>
+    
+    <div class="card shadow-sm border-0 rounded-4" style="max-width: 600px;">
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                {{ form.as_p }}
+                <button type="submit" class="btn btn-success mt-3">Start Task</button>
+                <a href="{% url 'farmer_worker_requests' %}" class="btn btn-secondary mt-3">Cancel</a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

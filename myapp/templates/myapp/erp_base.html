@@ -125,6 +125,18 @@
                     </a>
                 </li>
                 <li class="sidebar-item">
+                    <a href="{% url 'farmer_worker_requests' %}" class="sidebar-link {% if request.resolver_match.url_name == 'farmer_worker_requests' or request.resolver_match.url_name == 'farmer_request_workers' or request.resolver_match.url_name == 'farmer_wage_negotiation' %}active{% endif %}">
+                        <i class="bi bi-people"></i>
+                        <span>Worker Requests</span>
+                    </a>
+                </li>
+                <li class="sidebar-item">
+                    <a href="{% url 'farmer_tasks' %}" class="sidebar-link {% if request.resolver_match.url_name == 'farmer_tasks' or request.resolver_match.url_name == 'farmer_create_task' or request.resolver_match.url_name == 'farmer_worker_payment' %}active{% endif %}">
+                        <i class="bi bi-list-task"></i>
+                        <span>Worker Tasks</span>
+                    </a>
+                </li>
+                <li class="sidebar-item">
                     <a href="{% url 'farmer_wallet' %}" class="sidebar-link {% if request.resolver_match.url_name == 'farmer_wallet' %}active{% endif %}">
                         <i class="bi bi-wallet2"></i>
                         <span>My Wallet</span>
@@ -146,7 +158,15 @@
         {% endif %}
 
         <div class="p-3 text-center opacity-50 small border-top border-secondary">
-            v1.0 Phase 2
+            {% if request.session.customer_id %}
+                FarmLink ERP . Customer
+            {% elif request.session.worker_id %}
+                FarmLink ERP . Worker
+            {% elif request.session.delivery_id %}
+                FarmLink ERP . Delivery
+            {% else %}
+                FarmLink ERP . Farmer
+            {% endif %}
         </div>
     </aside>
 

@@ -250,6 +250,24 @@ body {
     z-index: 100;
     transition: all 0.3s ease;
     box-shadow: 4px 0 20px rgba(0, 0, 0, 0.08);
+    height: 100vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: rgba(150, 150, 150, 0.3);
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(150, 150, 150, 0.5);
 }
 
 .sidebar-brand {

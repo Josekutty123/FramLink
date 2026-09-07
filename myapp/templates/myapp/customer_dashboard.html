@@ -100,7 +100,8 @@
                                 <th>Winning Price</th>
                                 <th>Total Amount</th>
                                 <th>Purchase Date</th>
-                                <th>Status</th>
+                                <th>Sale Status</th>
+                                <th>Delivery Info</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -115,6 +116,31 @@
                                     <td class="fw-bold text-success">₹{{ p.total_amount }}</td>
                                     <td class="text-muted small">{{ p.sale_date|date:"Y-m-d H:i" }}</td>
                                     <td><span class="badge bg-success rounded-pill px-3">PURCHASED / WON</span></td>
+                                    <td>
+                                        {% if p.delivery_orders.first %}
+                                            {% with order=p.delivery_orders.first %}
+                                                <div class="small mb-1">Status: <strong>{{ order.status }}</strong></div>
+                                                {% if order.delivery_person %}
+                                                    <div class="small text-muted mb-1">
+                                                        <i class="bi bi-person-fill"></i> {{ order.delivery_person.full_name }} ({{ order.delivery_person.delivery_id }})<br>
+                                                        <i class="bi bi-telephone-fill"></i> {{ order.delivery_person.phone }}
+                                                    </div>
+                                                {% else %}
+                                                    <div class="small text-muted">Awaiting Assignment</div>
+                                                {% endif %}
+                                                
+                                                {% if order.status == 'AWAITING_CUSTOMER_CONFIRMATION' %}
+                                                    <form method="post" action="{% url 'customer_confirm_delivery' order.order_id %}" onsubmit="return confirm('Have you received the product?');">
+                                                        {% csrf_token %}
+                                                        <button type="submit" class="btn btn-sm btn-success mt-1 shadow-sm"><i class="bi bi-check-circle me-1"></i>Confirm Product Received</button>
+                                                    </form>
+                                                {% endif %}
+                                                
+                                            {% endwith %}
+                                        {% else %}
+                                            <span class="badge bg-secondary">Processing</span>
+                                        {% endif %}
+                                    </td>
                                 </tr>
                             {% endfor %}
                         </tbody>

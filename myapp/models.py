@@ -110,6 +110,7 @@ class Worker(models.Model):
     email = models.EmailField(max_length=191, unique=True)
     password = models.CharField(max_length=255)
     joining_date = models.DateField(auto_now_add=True)
+    status = models.CharField(max_length=20, choices=[('AVAILABLE', 'AVAILABLE'), ('ASSIGNED', 'ASSIGNED'), ('BUSY', 'BUSY')], default='AVAILABLE')
 
     class Meta:
         db_table = 'worker'
@@ -391,13 +392,15 @@ class DeliveryOrder(models.Model):
         ('ASSIGNED', 'ASSIGNED'),
         ('PICKED_UP', 'PICKED_UP'),
         ('OUT_FOR_DELIVERY', 'OUT_FOR_DELIVERY'),
+        ('AWAITING_CUSTOMER_CONFIRMATION', 'AWAITING_CUSTOMER_CONFIRMATION'),
         ('DELIVERED', 'DELIVERED'),
     ]
 
     order_id = models.CharField(max_length=20, unique=True, editable=False, blank=True)
     sale = models.ForeignKey(Sale, on_delete=models.CASCADE, related_name='delivery_orders')
     delivery_person = models.ForeignKey(Delivery, on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_deliveries')
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
+    status = models.CharField(max_length=50, choices=STATUS_CHOICES, default='PENDING')
+    customer_confirmation_date = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -421,3 +424,218 @@ class DeliveryOrder(models.Model):
 
     def __str__(self):
         return f"{self.order_id} - {self.status}"
+
+
+# ====================================================
+# WORKER MANAGEMENT & PAYMENT MODELS
+# ====================================================
+
+class WorkerRequest(models.Model):
+    STATUS_CHOICES = [
+        ('PENDING', 'PENDING'),
+        ('WAGE_NEGOTIATION', 'WAGE_NEGOTIATION'),
+        ('WAGE_AGREED', 'WAGE_AGREED'),
+        ('WORKERS_ASSIGNED', 'WORKERS_ASSIGNED'),
+        ('TASK_CREATED', 'TASK_CREATED'),
+        ('COMPLETED', 'COMPLETED'),
+    ]
+
+    request_id = models.CharField(max_length=20, unique=True, editable=False, blank=True)
+    farmer = models.ForeignKey(Farmer, on_delete=models.CASCADE, related_name='worker_requests')
+    num_workers = models.PositiveIntegerField()
+    work_description = models.TextField()
+    location = models.CharField(max_length=255)
+    start_date = models.DateField()
+    duration_days = models.PositiveIntegerField()
+    requested_wage = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    status = models.CharField(max_length=30, choices=STATUS_CHOICES, default='PENDING')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'worker_request'
+
+    def save(self, *args, **kwargs):
+        if not self.request_id:
+            max_num = 0
+            existing_ids = WorkerRequest.objects.values_list('request_id', flat=True)
+            for rid in existing_ids:
+                if rid and rid.startswith('WR'):
+                    match = re.search(r'\d+', rid)
+                    if match:
+                        num = int(match.group())
+                        if num > max_num:
+                            max_num = num
+            self.request_id = f"WR{max_num + 1}"
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.request_id} - {self.farmer.full_name} ({self.num_workers} workers)"
+
+
+class WorkerWageOffer(models.Model):
+    OFFERED_BY_CHOICES = [
+        ('FARMER', 'FARMER'),
+        ('ADMIN', 'ADMIN'),
+    ]
+    STATUS_CHOICES = [
+        ('ACTIVE', 'ACTIVE'),
+        ('ACCEPTED', 'ACCEPTED'),
+        ('REJECTED', 'REJECTED'),
+    ]
+
+    offer_id = models.CharField(max_length=20, unique=True, editable=False, blank=True)
+    worker_request = models.ForeignKey(WorkerRequest, on_delete=models.CASCADE, related_name='wage_offers')
+    offered_by = models.CharField(max_length=10, choices=OFFERED_BY_CHOICES)
+    amount_per_worker_per_day = models.DecimalField(max_digits=10, decimal_places=2)
+    message = models.TextField(blank=True, null=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='ACTIVE')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'worker_wage_offer'
+
+    def save(self, *args, **kwargs):
+        if not self.offer_id:
+            max_num = 0
+            existing_ids = WorkerWageOffer.objects.values_list('offer_id', flat=True)
+            for oid in existing_ids:
+                if oid and oid.startswith('WO'):
+                    match = re.search(r'\d+', oid)
+                    if match:
+                        num = int(match.group())
+                        if num > max_num:
+                            max_num = num
+            self.offer_id = f"WO{max_num + 1}"
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.offer_id} - {self.offered_by}: ₹{self.amount_per_worker_per_day}"
+
+
+class WorkerTask(models.Model):
+    STATUS_CHOICES = [
+        ('ASSIGNED', 'ASSIGNED'),
+        ('IN_PROGRESS', 'IN_PROGRESS'),
+        ('AWAITING_FARMER_CONFIRMATION', 'AWAITING_FARMER_CONFIRMATION'),
+        ('COMPLETED', 'COMPLETED'),
+    ]
+
+    task_id = models.CharField(max_length=20, unique=True, editable=False, blank=True)
+    farmer = models.ForeignKey(Farmer, on_delete=models.CASCADE, related_name='worker_tasks')
+    worker_request = models.OneToOneField(WorkerRequest, on_delete=models.CASCADE, related_name='task')
+    workers = models.ManyToManyField(Worker, related_name='tasks')
+    work_description = models.TextField()
+    location = models.CharField(max_length=255)
+    start_date = models.DateField()
+    duration_days = models.PositiveIntegerField()
+    daily_wage = models.DecimalField(max_digits=10, decimal_places=2)
+    total_salary = models.DecimalField(max_digits=12, decimal_places=2)
+    status = models.CharField(max_length=30, choices=STATUS_CHOICES, default='ASSIGNED')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'worker_task'
+
+    def save(self, *args, **kwargs):
+        if not self.task_id:
+            max_num = 0
+            existing_ids = WorkerTask.objects.values_list('task_id', flat=True)
+            for tid in existing_ids:
+                if tid and tid.startswith('WT'):
+                    match = re.search(r'\d+', tid)
+                    if match:
+                        num = int(match.group())
+                        if num > max_num:
+                            max_num = num
+            self.task_id = f"WT{max_num + 1}"
+        # Ensure total salary is calculated before saving if not set
+        if self.daily_wage and self.duration_days and self.pk is None: 
+            pass # We calculate it in view, but keeping model clean
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.task_id} - {self.work_description}"
+
+
+class WorkerSalarySettlement(models.Model):
+    STATUS_CHOICES = [
+        ('PAYMENT_PENDING', 'PAYMENT_PENDING'),
+        ('PAID_TO_ADMIN', 'PAID_TO_ADMIN'),
+        ('PAID', 'PAID'),
+    ]
+
+    settlement_id = models.CharField(max_length=20, unique=True, editable=False, blank=True)
+    farmer = models.ForeignKey(Farmer, on_delete=models.CASCADE, related_name='worker_settlements')
+    worker_request = models.ForeignKey(WorkerRequest, on_delete=models.SET_NULL, null=True, blank=True)
+    worker_task = models.ForeignKey(WorkerTask, on_delete=models.CASCADE, related_name='settlements')
+    worker = models.ForeignKey(Worker, on_delete=models.CASCADE, related_name='salary_settlements')
+    duration_days = models.PositiveIntegerField()
+    daily_wage = models.DecimalField(max_digits=10, decimal_places=2)
+    individual_salary = models.DecimalField(max_digits=12, decimal_places=2)
+    total_settlement_amount = models.DecimalField(max_digits=12, decimal_places=2)
+    payment_status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PAYMENT_PENDING')
+    created_at = models.DateTimeField(auto_now_add=True)
+    paid_date = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'worker_salary_settlement'
+
+    def save(self, *args, **kwargs):
+        if not self.settlement_id:
+            max_num = 0
+            existing_ids = WorkerSalarySettlement.objects.values_list('settlement_id', flat=True)
+            for sid in existing_ids:
+                if sid and sid.startswith('WSS'):
+                    match = re.search(r'\d+', sid)
+                    if match:
+                        num = int(match.group())
+                        if num > max_num:
+                            max_num = num
+            self.settlement_id = f"WSS{max_num + 1}"
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.settlement_id} - {self.worker.full_name}: ₹{self.individual_salary}"
+
+
+class WalletTransaction(models.Model):
+    TRANSACTION_TYPES = [
+        ('WORKER_SALARY_PAYMENT', 'WORKER_SALARY_PAYMENT'),
+        ('WALLET_TOPUP', 'WALLET_TOPUP'),
+        ('WORKER_SALARY_DISBURSE', 'WORKER_SALARY_DISBURSE'),
+    ]
+
+    transaction_id = models.CharField(max_length=20, unique=True, editable=False, blank=True)
+    farmer = models.ForeignKey(Farmer, on_delete=models.CASCADE, related_name='wallet_transactions', null=True, blank=True)
+    admin = models.ForeignKey(Admin, on_delete=models.CASCADE, related_name='wallet_transactions', null=True, blank=True)
+    worker = models.ForeignKey(Worker, on_delete=models.CASCADE, related_name='wallet_transactions', null=True, blank=True)
+    worker_settlement = models.ForeignKey(WorkerSalarySettlement, on_delete=models.SET_NULL, null=True, blank=True, related_name='transactions')
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    transaction_type = models.CharField(max_length=30, choices=TRANSACTION_TYPES)
+    prev_farmer_balance = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    new_farmer_balance = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    prev_admin_balance = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    new_admin_balance = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'wallet_transaction'
+
+    def save(self, *args, **kwargs):
+        if not self.transaction_id:
+            max_num = 0
+            existing_ids = WalletTransaction.objects.values_list('transaction_id', flat=True)
+            for tid in existing_ids:
+                if tid and tid.startswith('TXN'):
+                    match = re.search(r'\d+', tid)
+                    if match:
+                        num = int(match.group())
+                        if num > max_num:
+                            max_num = num
+            self.transaction_id = f"TXN{max_num + 1}"
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.transaction_id} - {self.transaction_type}: ₹{self.amount}"

@@ -75,5 +75,99 @@
             </div>
         </div>
     </div>
+    
+    <!-- Assigned Tasks & Salary History -->
+    <div class="row g-4 mt-2">
+        <div class="col-12">
+            <div class="card shadow-sm border-0 rounded-4 mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0 fw-bold">My Assigned Tasks</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Task ID</th>
+                                <th>Farmer Name</th>
+                                <th>Work Description</th>
+                                <th>Location</th>
+                                <th>Start Date</th>
+                                <th>Duration</th>
+                                <th>Daily Wage</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for task in tasks %}
+                            <tr>
+                                <td>{{ task.task_id }}</td>
+                                <td>{{ task.farmer.full_name }}</td>
+                                <td>{{ task.work_description|truncatechars:30 }}</td>
+                                <td>{{ task.location }}</td>
+                                <td>{{ task.start_date|date:"M d, Y" }}</td>
+                                <td>{{ task.duration_days }} Days</td>
+                                <td>₹{{ task.daily_wage }}</td>
+                                <td><span class="badge bg-primary">{{ task.status }}</span></td>
+                                <td>
+                                    {% if task.status == 'IN_PROGRESS' %}
+                                    <form method="post" action="{% url 'worker_mark_task_completed' task.task_id %}">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-success">Mark Completed</button>
+                                    </form>
+                                    {% elif task.status == 'AWAITING_FARMER_CONFIRMATION' %}
+                                    <span class="text-muted">Awaiting Confirmation</span>
+                                    {% else %}
+                                    -
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="9" class="text-center text-muted">No assigned tasks found.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="card shadow-sm border-0 rounded-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0 fw-bold">Salary History</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Settlement ID</th>
+                                <th>Task</th>
+                                <th>Duration</th>
+                                <th>Daily Wage</th>
+                                <th>Salary</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for settlement in settlements %}
+                            <tr>
+                                <td>{{ settlement.settlement_id }}</td>
+                                <td>{{ settlement.worker_task.work_description|truncatechars:30 }}</td>
+                                <td>{{ settlement.duration_days }} Days</td>
+                                <td>₹{{ settlement.daily_wage }}</td>
+                                <td><strong>₹{{ settlement.individual_salary }}</strong></td>
+                                <td>
+                                    <span class="badge bg-{% if settlement.payment_status == 'PAID' %}success{% else %}warning{% endif %}">
+                                        {{ settlement.payment_status }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="6" class="text-center text-muted">No salary history found.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}

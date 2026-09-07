@@ -1,5 +1,5 @@
 from django import forms
-from .models import Farmer, Customer, Worker, Delivery, MarketSettings, Product, BargainingBid
+from .models import Farmer, Customer, Worker, Delivery, MarketSettings, Product, BargainingBid, WorkerRequest, WorkerWageOffer, WorkerTask, WalletTransaction, WorkerSalarySettlement
 
 
 class FarmerRegistrationForm(forms.ModelForm):
@@ -403,8 +403,79 @@ class BidForm(forms.ModelForm):
         model = BargainingBid
         fields = ['bid_price_per_unit']
         widgets = {
-            'bid_price_per_unit': forms.NumberInput(attrs={'class': 'form-control form-control-lg', 'step': '0.50', 'min': '0.01', 'placeholder': 'Enter your bid price per unit (₹)'}),
+            'bid_price_per_unit': forms.NumberInput(attrs={'class': 'form-control form-control-lg', 'step': '0.01', 'min': '0.01', 'placeholder': 'Enter your bid price per unit (₹)'}),
+        }
+
+# ====================================================
+# WORKER MANAGEMENT & PAYMENT FORMS
+# ====================================================
+
+class AdminWorkerForm(forms.ModelForm):
+    password = forms.CharField(
+        widget=forms.PasswordInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Enter temporary password'
+        }),
+        label='Password',
+        required=True
+    )
+    
+    class Meta:
+        model = Worker
+        fields = ['full_name', 'age', 'gender', 'address', 'place', 'phone', 'email', 'status']
+        widgets = {
+            'full_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Full Name'}),
+            'age': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Age', 'min': '18', 'max': '120'}),
+            'gender': forms.Select(attrs={'class': 'form-select'}),
+            'address': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Full Address'}),
+            'place': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'City / Town / Village'}),
+            'phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Phone Number'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'Email Address'}),
+            'status': forms.Select(attrs={'class': 'form-select'}),
+        }
+        
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+        if email:
+            qs = Worker.objects.filter(email=email)
+            if self.instance and self.instance.pk:
+                qs = qs.exclude(pk=self.instance.pk)
+            if qs.exists():
+                raise forms.ValidationError("An account with this email address already exists.")
+        return email
+
+
+class WorkerRequestForm(forms.ModelForm):
+    class Meta:
+        model = WorkerRequest
+        fields = ['num_workers', 'work_description', 'location', 'start_date', 'duration_days', 'requested_wage']
+        widgets = {
+            'num_workers': forms.NumberInput(attrs={'class': 'form-control', 'min': '1', 'placeholder': 'Number of workers needed'}),
+            'work_description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Describe the work (e.g. Tomato Planting)'}),
+            'location': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Work location'}),
+            'start_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'duration_days': forms.NumberInput(attrs={'class': 'form-control', 'min': '1', 'placeholder': 'Duration in days'}),
+            'requested_wage': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '1', 'placeholder': 'Expected Daily Wage per Worker (₹)'}),
         }
 
 
+class WorkerWageOfferForm(forms.ModelForm):
+    class Meta:
+        model = WorkerWageOffer
+        fields = ['amount_per_worker_per_day', 'message']
+        widgets = {
+            'amount_per_worker_per_day': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '1', 'placeholder': 'Offer amount (₹)'}),
+            'message': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Optional note/message'}),
+        }
 
+
+class WorkerTaskForm(forms.ModelForm):
+    class Meta:
+        model = WorkerTask
+        fields = ['work_description', 'location', 'start_date', 'duration_days']
+        widgets = {
+            'work_description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Task Details'}),
+            'location': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Work location'}),
+            'start_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'duration_days': forms.NumberInput(attrs={'class': 'form-control', 'min': '1', 'placeholder': 'Duration in days'}),
+        }

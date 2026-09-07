@@ -1,0 +1,49 @@
+{% extends 'myapp/admin_base.html' %}
+{% block title %}Assign Workers - Admin{% endblock %}
+{% block admin_content %}
+<div class="container-fluid p-4">
+    <h2 class="mb-4">Assign Workers to {{ worker_request.request_id }}</h2>
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+    
+    <div class="alert alert-info">
+        <strong>Workers Required:</strong> {{ worker_request.num_workers }} <br>
+        <strong>Agreed Wage:</strong> ₹{{ worker_request.requested_wage }}/day <br>
+        <strong>Duration:</strong> {{ worker_request.duration_days }} days
+    </div>
+    
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Select</th>
+                            <th>Worker ID</th>
+                            <th>Name</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for worker in available_workers %}
+                        <tr>
+                            <td><input type="checkbox" name="worker_ids" value="{{ worker.worker_id }}" class="form-check-input"></td>
+                            <td>{{ worker.worker_id }}</td>
+                            <td>{{ worker.full_name }}</td>
+                            <td><span class="badge bg-success">AVAILABLE</span></td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="4" class="text-center">No available workers.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                <button type="submit" class="btn btn-primary mt-3">Assign Selected Workers</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

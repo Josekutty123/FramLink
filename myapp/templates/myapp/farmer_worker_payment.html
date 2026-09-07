@@ -1,0 +1,44 @@
+{% extends 'myapp/erp_base.html' %}
+{% block title %}Worker Payment{% endblock %}
+{% block erp_content %}
+<div class="container-fluid px-4 py-5">
+    <h2 class="mb-4">Worker Payment ({{ task.task_id }})</h2>
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+    
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card shadow-sm border-0 rounded-4 mb-4">
+                <div class="card-body text-center">
+                    <h5 class="text-muted">Total Worker Salary</h5>
+                    <h1 class="display-4 text-success fw-bold">₹{{ total_required }}</h1>
+                    <p>For {{ task.workers.count }} workers x {{ task.duration_days }} days</p>
+                </div>
+            </div>
+            
+            <div class="card shadow-sm border-0 rounded-4">
+                <div class="card-body">
+                    <h5>Wallet Balance: <strong>₹{{ wallet.balance }}</strong></h5>
+                    {% if wallet.balance < total_required %}
+                    <div class="alert alert-danger mt-3">
+                        Insufficient wallet balance. Please add <strong>₹{{ total_required|add:"-"|add:wallet.balance }}</strong> to your wallet to complete this payment.
+                    </div>
+                    <a href="{% url 'farmer_wallet' %}" class="btn btn-primary w-100 mt-2">Add Money to Wallet</a>
+                    {% else %}
+                    <div class="alert alert-success mt-3">
+                        Sufficient balance.
+                    </div>
+                    <form method="post">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-success w-100 btn-lg mt-2">Pay Total Worker Salary</button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,48 @@
+{% extends 'myapp/admin_base.html' %}
+{% block title %}Worker Requests - Admin{% endblock %}
+{% block admin_content %}
+<div class="container-fluid p-4">
+    <h2 class="mb-4">Worker Requests</h2>
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Request ID</th>
+                        <th>Farmer</th>
+                        <th>Workers Needed</th>
+                        <th>Work</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for req in requests %}
+                    <tr>
+                        <td>{{ req.request_id }}</td>
+                        <td>{{ req.farmer.full_name }}</td>
+                        <td>{{ req.num_workers }}</td>
+                        <td>{{ req.work_description|truncatechars:30 }}</td>
+                        <td><span class="badge bg-secondary">{{ req.status }}</span></td>
+                        <td>
+                            {% if req.status == 'PENDING' or req.status == 'WAGE_NEGOTIATION' %}
+                            <a href="{% url 'admin_wage_negotiation' req.request_id %}" class="btn btn-sm btn-info">Negotiate Wage</a>
+                            {% elif req.status == 'WAGE_AGREED' %}
+                            <a href="{% url 'admin_assign_workers' req.request_id %}" class="btn btn-sm btn-primary">Assign Workers</a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="6" class="text-center">No worker requests found.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
