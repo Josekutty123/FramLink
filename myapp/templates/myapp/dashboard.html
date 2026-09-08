@@ -33,17 +33,14 @@
             <div class="profile-card p-4 h-100">
                 <div class="d-flex align-items-center gap-3 mb-3">
                     <div class="stat-icon green">
-                        <i class="bi bi-person-circle"></i>
+                        <i class="bi bi-box-seam"></i>
                     </div>
                     <div>
-                        <h5 class="fw-bold mb-1">Farmer Profile</h5>
-                        <p class="text-muted small mb-0">View credentials and update personal details like contact
-                            number, address, and location.</p>
+                        <h5 class="fw-bold mb-1">Total Products Added</h5>
+                        <p class="text-muted small mb-0">Products added by you</p>
                     </div>
                 </div>
-                <a href="{% url 'profile' %}" class="btn btn-outline-success btn-sm rounded-pill px-3 mt-2">
-                    Go to Profile <i class="bi bi-arrow-right ms-1"></i>
-                </a>
+                <h2 class="display-5 fw-bold text-success mt-3 mb-0 ps-1">{{ total_products }}</h2>
             </div>
         </div>
 
@@ -51,20 +48,93 @@
             <div class="profile-card p-4 h-100">
                 <div class="d-flex align-items-center gap-3 mb-3">
                     <div class="stat-icon mint">
-                        <i class="bi bi-shield-check"></i>
+                        <i class="bi bi-cart-check"></i>
                     </div>
                     <div>
-                        <h5 class="fw-bold mb-1">System Security</h5>
-                        <p class="text-muted small mb-0">Your account is securely verified and password is encrypted
-                            with Django security.</p>
+                        <h5 class="fw-bold mb-1">Sold Products</h5>
+                        <p class="text-muted small mb-0">Successfully sold products</p>
                     </div>
                 </div>
-                <span
-                    class="badge bg-success bg-opacity-10 text-success border border-success px-3 py-2 rounded-pill mt-2">
-                    <i class="bi bi-check-circle-fill me-1"></i> Account Active
-                </span>
+                <h2 class="display-5 fw-bold text-success mt-3 mb-0 ps-1">{{ sold_products }}</h2>
             </div>
         </div>
+    </div>
+
+    <!-- Ongoing Bids Section -->
+    <div class="mt-5 mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h4 class="fw-bold mb-1">ONGOING BIDS / MY LIVE PRODUCTS</h4>
+                <p class="text-muted small mb-0">Products currently available in live bargaining.</p>
+            </div>
+        </div>
+
+        {% if ongoing_products_data %}
+            <div class="row g-4">
+                {% for item in ongoing_products_data %}
+                <div class="col-md-6 col-lg-4">
+                    <div class="card border-0 shadow-sm h-100 rounded-4 overflow-hidden">
+                        {% if item.product.image %}
+                        <img src="{{ item.product.image.url }}" class="card-img-top" alt="{{ item.product.product_name }}" style="height: 200px; object-fit: cover;">
+                        {% else %}
+                        <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
+                            <i class="bi bi-image text-muted fs-1"></i>
+                        </div>
+                        {% endif %}
+                        <div class="card-body p-4">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h5 class="fw-bold mb-0 text-truncate">{{ item.product.product_name }}</h5>
+                                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger rounded-pill pulse-animation">
+                                    <i class="bi bi-record-circle-fill me-1"></i> LIVE
+                                </span>
+                            </div>
+                            <p class="text-muted small mb-3">
+                                <i class="bi bi-tag-fill text-success me-1"></i> {{ item.product.category }} &bull;
+                                <i class="bi bi-box-seam me-1"></i> {{ item.product.quantity }} {{ item.product.unit }}
+                            </p>
+                            
+                            <div class="p-3 bg-light rounded-3 mb-3 border">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="text-muted small">Starting Price:</span>
+                                    <span class="fw-bold">₹{{ item.product.price_per_unit }}</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="text-muted small">Highest Bid:</span>
+                                    {% if item.highest_bid %}
+                                    <span class="fw-bold text-success">₹{{ item.highest_bid.bid_price_per_unit }}</span>
+                                    {% else %}
+                                    <span class="text-muted fst-italic small">No bids yet</span>
+                                    {% endif %}
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <span class="text-muted small">Total Bids:</span>
+                                    <span class="fw-bold">{{ item.bid_count }}</span>
+                                </div>
+                            </div>
+                            
+                            {% if market_settings.closing_time %}
+                            <p class="text-muted small mb-3 text-center">
+                                <i class="bi bi-clock me-1 text-danger"></i> Bargaining Ends: {{ market_settings.closing_time|time:"g:i A" }}
+                            </p>
+                            {% endif %}
+                            
+                        </div>
+                        <div class="card-footer bg-white border-0 p-4 pt-0 text-center">
+                            <a href="{% url 'live_bargaining' item.product.product_id %}" class="btn btn-outline-success w-100 rounded-pill fw-bold">
+                                VIEW LIVE ROOM <i class="bi bi-arrow-right-circle ms-1"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="card border-0 shadow-sm rounded-4 text-center p-5 text-muted">
+                <i class="bi bi-inbox fs-1 mb-3 text-success opacity-50"></i>
+                <h5 class="fw-bold">No ongoing bids</h5>
+                <p class="mb-0">You have no products currently in live bargaining.</p>
+            </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

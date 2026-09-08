@@ -189,9 +189,30 @@ def dashboard_view(request):
         messages.error(request, "Please log in to access the dashboard.")
         return redirect('farmer_login')
 
+    total_products = Product.objects.filter(farmer=farmer).count()
+    sold_products = Product.objects.filter(farmer=farmer, status='SOLD').count()
+
+    market_settings = MarketSettings.get_settings()
+    ongoing_products_data = []
+
+    if market_settings.bargaining_status == 'ACTIVE':
+        ongoing_products = Product.objects.filter(farmer=farmer, status='AVAILABLE')
+        for p in ongoing_products:
+            bids = p.bids.all()
+            highest_bid = bids.order_by('-bid_price_per_unit').first()
+            ongoing_products_data.append({
+                'product': p,
+                'highest_bid': highest_bid,
+                'bid_count': bids.count()
+            })
+
     context = {
         'farmer': farmer,
         'profile_status': 'Active',
+        'total_products': total_products,
+        'sold_products': sold_products,
+        'ongoing_products_data': ongoing_products_data,
+        'market_settings': market_settings,
     }
     return render(request, 'myapp/dashboard.html', context)
 
