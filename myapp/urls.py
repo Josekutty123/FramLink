@@ -66,6 +66,7 @@ urlpatterns = [
     path('farmer/products/edit/<str:product_id>/', views.farmer_edit_product_view, name='farmer_edit_product'),
     path('farmer/products/delete/<str:product_id>/', views.farmer_delete_product_view, name='farmer_delete_product'),
     path('farmer/wallet/', views.farmer_wallet_view, name='farmer_wallet'),
+    path('farmer/my-bids/', views.farmer_bids_view, name='farmer_bids'),
 
     path('explore-products/', views.explore_products_view, name='explore_products'),
     path('marketplace/join/<str:product_id>/', views.join_bargaining_view, name='join_bargaining'),

@@ -193,7 +193,13 @@
                                     <td class="fw-semibold text-dark">{{ s.product.product_name }}</td>
                                     <td>{{ s.quantity }} {{ s.product.unit }}</td>
                                     <td>{{ s.farmer.full_name }} <small class="text-muted">({{ s.farmer.farmer_id }})</small></td>
-                                    <td>{{ s.customer.full_name }} <small class="text-muted">({{ s.customer.customer_id }})</small></td>
+                                    <td>
+                                        {% if s.customer %}
+                                            {{ s.customer.full_name }} <small class="text-muted">({{ s.customer.customer_id }})</small>
+                                        {% elif s.farmer_customer %}
+                                            {{ s.farmer_customer.full_name }} <small class="text-muted">({{ s.farmer_customer.farmer_id }})</small>
+                                        {% endif %}
+                                    </td>
                                     <td class="fw-bold fs-6">₹{{ s.total_amount }}</td>
                                     <td class="text-success fw-bold">₹{{ s.farmer_share }}</td>
                                     <td class="text-warning fw-bold">+₹{{ s.admin_commission }}</td>

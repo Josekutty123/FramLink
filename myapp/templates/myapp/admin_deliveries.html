@@ -114,9 +114,15 @@
                                     <small class="text-muted fw-bold"><i class="bi bi-telephone-fill"></i> {{ order.sale.farmer.phone }}</small>
                                 </td>
                                 <td>
-                                    <div><i class="bi bi-person-lines-fill text-muted me-1"></i> {{ order.sale.customer.full_name }}</div>
-                                    <small class="text-muted d-block">{{ order.sale.customer.address }}, {{ order.sale.customer.place }}</small>
-                                    <small class="text-muted fw-bold"><i class="bi bi-telephone-fill"></i> {{ order.sale.customer.phone }}</small>
+                                    {% if order.sale.customer %}
+                                        <div><i class="bi bi-person-lines-fill text-muted me-1"></i> {{ order.sale.customer.full_name }}</div>
+                                        <small class="text-muted d-block">{{ order.sale.customer.address }}, {{ order.sale.customer.place }}</small>
+                                        <small class="text-muted fw-bold"><i class="bi bi-telephone-fill"></i> {{ order.sale.customer.phone }}</small>
+                                    {% elif order.sale.farmer_customer %}
+                                        <div><i class="bi bi-person-lines-fill text-muted me-1"></i> {{ order.sale.farmer_customer.full_name }}</div>
+                                        <small class="text-muted d-block">{{ order.sale.farmer_customer.address }}, {{ order.sale.farmer_customer.place }}</small>
+                                        <small class="text-muted fw-bold"><i class="bi bi-telephone-fill"></i> {{ order.sale.farmer_customer.phone }}</small>
+                                    {% endif %}
                                 </td>
                                 <td>
                                     {% if order.status == 'PENDING' %}

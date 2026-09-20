@@ -99,10 +99,17 @@
                                 </div>
                                 <div class="col-md-4">
                                     <h6 class="text-danger text-uppercase fw-bold mb-3"><i class="bi bi-house-door-fill me-2"></i> Deliver To Customer</h6>
+                                {% if order.sale.customer %}
                                     <div class="mb-2"><span class="fw-semibold">Name:</span> {{ order.sale.customer.full_name }}</div>
                                     <div class="mb-2"><span class="fw-semibold">Phone:</span> <a href="tel:{{ order.sale.customer.phone }}" class="text-decoration-none">{{ order.sale.customer.phone }}</a></div>
                                     <div class="mb-2"><span class="fw-semibold">Place:</span> {{ order.sale.customer.place }}</div>
                                     <div class="small text-muted">{{ order.sale.customer.address }}</div>
+                                {% elif order.sale.farmer_customer %}
+                                    <div class="mb-2"><span class="fw-semibold">Name:</span> {{ order.sale.farmer_customer.full_name }}</div>
+                                    <div class="mb-2"><span class="fw-semibold">Phone:</span> <a href="tel:{{ order.sale.farmer_customer.phone }}" class="text-decoration-none">{{ order.sale.farmer_customer.phone }}</a></div>
+                                    <div class="mb-2"><span class="fw-semibold">Place:</span> {{ order.sale.farmer_customer.place }}</div>
+                                    <div class="small text-muted">{{ order.sale.farmer_customer.address }}</div>
+                                {% endif %}
                                 </div>
                             </div>
                             
@@ -164,7 +171,13 @@
                                 <tr>
                                     <td><span class="badge bg-light text-dark border px-2 py-1">{{ order.order_id }}</span></td>
                                     <td>{{ order.sale.product.product_name }}</td>
-                                    <td>{{ order.sale.customer.full_name }} ({{ order.sale.customer.place }})</td>
+                                    <td>
+                                        {% if order.sale.customer %}
+                                            {{ order.sale.customer.full_name }} ({{ order.sale.customer.place }})
+                                        {% elif order.sale.farmer_customer %}
+                                            {{ order.sale.farmer_customer.full_name }} ({{ order.sale.farmer_customer.place }})
+                                        {% endif %}
+                                    </td>
                                     <td>{{ order.updated_at|date:"M d, Y H:i" }}</td>
                                 </tr>
                             {% endfor %}

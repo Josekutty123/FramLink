@@ -424,6 +424,22 @@ def customer_bids_view(request):
     return render(request, 'myapp/customer_bids.html', context)
 
 
+def farmer_bids_view(request):
+    farmer = get_current_farmer(request)
+    if not farmer:
+        messages.error(request, "Please log in to access your bids.")
+        return redirect('login')
+
+    # Get unique products the farmer bid on
+    bid_products = Product.objects.filter(bids__farmer_bidder=farmer).distinct().order_by('-created_at')
+
+    context = {
+        'farmer': farmer,
+        'bid_products': bid_products,
+    }
+    return render(request, 'myapp/farmer_bids.html', context)
+
+
 # ====================================================
 # WORKER MODULE VIEWS
 # ====================================================
@@ -933,6 +949,7 @@ def admin_marketplace_view(request):
 
 def _process_sale(product, highest_bid):
     winning_customer = highest_bid.customer
+    winning_farmer = highest_bid.farmer_bidder
     winning_price = Decimal(str(highest_bid.bid_price_per_unit))
     quantity = Decimal(str(product.quantity))
     total_amount = quantity * winning_price
@@ -943,6 +960,7 @@ def _process_sale(product, highest_bid):
     # Update Product Status & Reserved Winning Customer
     product.status = 'SOLD'
     product.winning_customer = winning_customer
+    product.winning_farmer = winning_farmer
     product.save()
 
     # Update Bids Status
@@ -972,6 +990,7 @@ def _process_sale(product, highest_bid):
         product=product,
         farmer=product.farmer,
         customer=winning_customer,
+        farmer_customer=winning_farmer,
         quantity=product.quantity,
         winning_price=winning_price,
         total_amount=total_amount,
@@ -1207,10 +1226,8 @@ def join_bargaining_view(request, product_id):
     farmer = get_current_farmer(request)
     admin = get_current_admin(request)
 
-    # Allow farmer owner or admin to view bargaining room directly
-    if farmer and product.farmer == farmer:
-        return redirect('live_bargaining', product_id=product.product_id)
-    if admin:
+    # Allow any logged-in farmer or admin to view bargaining room directly
+    if farmer or admin:
         return redirect('live_bargaining', product_id=product.product_id)
 
     # Block worker and delivery person
@@ -1243,15 +1260,11 @@ def live_bargaining_view(request, product_id):
 
     # Check role & permissions
     is_owner_farmer = (farmer and product.farmer == farmer)
+    is_farmer_buyer = (farmer and product.farmer != farmer)
     is_admin = bool(admin)
     is_customer = bool(customer)
 
-    # Non-owner farmers cannot bid or watch other farmers' bargaining rooms
-    if farmer and not is_owner_farmer and not is_customer and not is_admin:
-        messages.error(request, "Farmers can only watch bargaining rooms for their own products.")
-        return redirect('farmer_products')
-
-    if not (is_customer or is_owner_farmer or is_admin):
+    if not (is_customer or farmer or is_admin):
         return redirect('join_bargaining', product_id=product.product_id)
 
     market_settings = MarketSettings.get_settings()
@@ -1268,6 +1281,7 @@ def live_bargaining_view(request, product_id):
         'bid_form': bid_form,
         'is_customer': is_customer,
         'is_owner_farmer': is_owner_farmer,
+        'is_farmer_buyer': is_farmer_buyer,
         'is_admin': is_admin,
         'current_customer': customer,
         'current_farmer': farmer,
@@ -1287,10 +1301,12 @@ def api_get_bids_view(request, product_id):
 
     bids_data = []
     for bid in bids:
+        bidder_name = bid.customer.full_name if bid.customer else (bid.farmer_bidder.full_name if bid.farmer_bidder else "Unknown")
+        bidder_id = bid.customer.customer_id if bid.customer else (bid.farmer_bidder.farmer_id if bid.farmer_bidder else "")
         bids_data.append({
             'bid_id': bid.bid_id,
-            'customer_name': bid.customer.full_name,
-            'customer_id': bid.customer.customer_id,
+            'customer_name': bidder_name,
+            'customer_id': bidder_id,
             'bid_price_per_unit': float(bid.bid_price_per_unit),
             'total_bid_amount': float(bid.total_bid_amount),
             'status': bid.status,
@@ -1299,21 +1315,31 @@ def api_get_bids_view(request, product_id):
 
     highest_data = None
     if highest_bid:
+        highest_bidder_name = highest_bid.customer.full_name if highest_bid.customer else (highest_bid.farmer_bidder.full_name if highest_bid.farmer_bidder else "Unknown")
         highest_data = {
             'bid_id': highest_bid.bid_id,
-            'customer_name': highest_bid.customer.full_name,
+            'customer_name': highest_bidder_name,
             'bid_price_per_unit': float(highest_bid.bid_price_per_unit),
             'total_bid_amount': float(highest_bid.total_bid_amount),
         }
 
     market_settings = MarketSettings.get_settings()
+    
+    winning_customer_name = None
+    winning_customer_id = None
+    if product.winning_customer:
+        winning_customer_name = product.winning_customer.full_name
+        winning_customer_id = product.winning_customer.customer_id
+    elif getattr(product, 'winning_farmer', None):
+        winning_customer_name = product.winning_farmer.full_name
+        winning_customer_id = product.winning_farmer.farmer_id
 
     return JsonResponse({
         'product_id': product.product_id,
         'product_status': product.status,
         'bargaining_status': market_settings.bargaining_status,
-        'winning_customer': product.winning_customer.full_name if product.winning_customer else None,
-        'winning_customer_id': product.winning_customer.customer_id if product.winning_customer else None,
+        'winning_customer': winning_customer_name,
+        'winning_customer_id': winning_customer_id,
         'highest_bid': highest_data,
         'bids': bids_data,
     })
@@ -1324,8 +1350,9 @@ def api_place_bid_view(request, product_id):
         return JsonResponse({'error': 'POST request required'}, status=400)
 
     customer = get_current_customer(request)
-    if not customer:
-        return JsonResponse({'error': 'Only registered customers can place bids.'}, status=403)
+    farmer = get_current_farmer(request)
+    if not customer and not farmer:
+        return JsonResponse({'error': 'Only registered customers or farmers can place bids.'}, status=403)
 
     market_settings = MarketSettings.get_settings()
     if market_settings.status != 'OPEN':
@@ -1338,6 +1365,9 @@ def api_place_bid_view(request, product_id):
         product = Product.objects.get(product_id=product_id)
     except Product.DoesNotExist:
         return JsonResponse({'error': 'Product not found'}, status=404)
+        
+    if farmer and product.farmer == farmer:
+        return JsonResponse({'error': 'You cannot bid on your own product.'}, status=400)
 
     if product.status == 'SOLD':
         return JsonResponse({'error': 'This product has already been sold.'}, status=400)
@@ -1355,15 +1385,16 @@ def api_place_bid_view(request, product_id):
     
     if highest_bid:
         if bid_price <= highest_bid.bid_price_per_unit:
-            return JsonResponse({'error': f'Bid must be higher than the current highest bid of ₹{highest_bid.bid_price_per_unit}.'}, status=400)
+            return JsonResponse({'error': 'Bid amount must be greater than the current highest bid.'}, status=400)
     else:
         if bid_price <= product.price_per_unit:
-            return JsonResponse({'error': f'Bid must be higher than the starting price of ₹{product.price_per_unit}.'}, status=400)
+            return JsonResponse({'error': 'Bid amount must be greater than the current highest bid.'}, status=400)
 
     # Save new bid
     new_bid = BargainingBid.objects.create(
         product=product,
         customer=customer,
+        farmer_bidder=farmer if farmer else None,
         bid_price_per_unit=bid_price,
         status='ACTIVE'
     )

@@ -84,8 +84,13 @@
                                 <div class="text-muted" style="font-size: 0.75rem;">{{ sale.farmer.farmer_id }}</div>
                             </td>
                             <td>
-                                <div class="small fw-bold">{{ sale.customer.full_name }}</div>
-                                <div class="text-muted" style="font-size: 0.75rem;">{{ sale.customer.customer_id }}</div>
+                                {% if sale.customer %}
+                                    <div class="small fw-bold">{{ sale.customer.full_name }}</div>
+                                    <div class="text-muted" style="font-size: 0.75rem;">{{ sale.customer.customer_id }}</div>
+                                {% elif sale.farmer_customer %}
+                                    <div class="small fw-bold">{{ sale.farmer_customer.full_name }}</div>
+                                    <div class="text-muted" style="font-size: 0.75rem;">{{ sale.farmer_customer.farmer_id }}</div>
+                                {% endif %}
                             </td>
                             <td>{{ sale.quantity }} {{ sale.product.unit }}</td>
                             <td>₹{{ sale.winning_price }}</td>

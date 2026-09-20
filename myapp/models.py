@@ -237,6 +237,7 @@ class Product(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     winning_customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True, blank=True, to_field='customer_id', db_column='winning_customer_id', related_name='won_products')
+    winning_farmer = models.ForeignKey(Farmer, on_delete=models.SET_NULL, null=True, blank=True, to_field='farmer_id', db_column='winning_farmer_id', related_name='won_products_as_farmer')
 
     class Meta:
         db_table = 'product'
@@ -269,7 +270,8 @@ class BargainingBid(models.Model):
 
     bid_id = models.CharField(max_length=20, unique=True, editable=False, blank=True)
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='bids')
-    customer = models.ForeignKey(Customer, on_delete=models.CASCADE, to_field='customer_id', db_column='customer_id', related_name='bids')
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE, to_field='customer_id', db_column='customer_id', related_name='bids', null=True, blank=True)
+    farmer_bidder = models.ForeignKey(Farmer, on_delete=models.CASCADE, to_field='farmer_id', db_column='farmer_bidder_id', related_name='bids_as_farmer', null=True, blank=True)
     bid_price_per_unit = models.DecimalField(max_digits=10, decimal_places=2)
     total_bid_amount = models.DecimalField(max_digits=12, decimal_places=2)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='ACTIVE')
@@ -295,7 +297,8 @@ class BargainingBid(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.bid_id} - {self.customer.full_name} for {self.product.product_name} @ ₹{self.bid_price_per_unit}/unit"
+        bidder_name = self.customer.full_name if self.customer else (self.farmer_bidder.full_name if self.farmer_bidder else "Unknown")
+        return f"{self.bid_id} - {bidder_name} for {self.product.product_name} @ ₹{self.bid_price_per_unit}/unit"
 
 
 class FarmerWallet(models.Model):
@@ -357,7 +360,8 @@ class Sale(models.Model):
     sale_id = models.CharField(max_length=20, unique=True, editable=False, blank=True)
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='sales')
     farmer = models.ForeignKey(Farmer, on_delete=models.CASCADE, to_field='farmer_id', db_column='farmer_id', related_name='sales')
-    customer = models.ForeignKey(Customer, on_delete=models.CASCADE, to_field='customer_id', db_column='customer_id', related_name='purchases')
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE, to_field='customer_id', db_column='customer_id', related_name='purchases', null=True, blank=True)
+    farmer_customer = models.ForeignKey(Farmer, on_delete=models.CASCADE, to_field='farmer_id', db_column='farmer_customer_id', related_name='purchases_as_customer', null=True, blank=True)
     quantity = models.DecimalField(max_digits=10, decimal_places=2)
     winning_price = models.DecimalField(max_digits=10, decimal_places=2)
     total_amount = models.DecimalField(max_digits=12, decimal_places=2)

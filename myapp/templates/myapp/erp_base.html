@@ -124,6 +124,19 @@
                         <span>Add Product</span>
                     </a>
                 </li>
+                <li class="sidebar-item mt-3 mb-1 px-3 text-uppercase text-light opacity-75 small fw-bold">Marketplace</li>
+                <li class="sidebar-item">
+                    <a href="{% url 'explore_products' %}" class="sidebar-link {% if request.resolver_match.url_name == 'explore_products' %}active{% endif %}">
+                        <i class="bi bi-shop"></i>
+                        <span>Explore Marketplace</span>
+                    </a>
+                </li>
+                <li class="sidebar-item">
+                    <a href="{% url 'farmer_bids' %}" class="sidebar-link {% if request.resolver_match.url_name == 'farmer_bids' %}active{% endif %}">
+                        <i class="bi bi-hammer"></i>
+                        <span>My Bids & Results</span>
+                    </a>
+                </li>
                 <li class="sidebar-item">
                     <a href="{% url 'farmer_worker_requests' %}" class="sidebar-link {% if request.resolver_match.url_name == 'farmer_worker_requests' or request.resolver_match.url_name == 'farmer_request_workers' or request.resolver_match.url_name == 'farmer_wage_negotiation' %}active{% endif %}">
                         <i class="bi bi-people"></i>

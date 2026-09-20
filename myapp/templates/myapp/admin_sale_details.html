@@ -117,16 +117,29 @@
                         <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3 flex-shrink-0" style="width: 45px; height: 45px;">
                             <i class="bi bi-person fs-5"></i>
                         </div>
-                        <div>
-                            <h6 class="mb-0 fw-bold">{{ sale.customer.full_name }}</h6>
-                            <small class="text-muted">{{ sale.customer.customer_id }}</small>
+                        {% if sale.customer %}
+                            <div>
+                                <h6 class="mb-0 fw-bold">{{ sale.customer.full_name }}</h6>
+                                <small class="text-muted">{{ sale.customer.customer_id }}</small>
+                            </div>
                         </div>
-                    </div>
-                    <ul class="list-unstyled mb-0 small">
-                        <li class="mb-2"><i class="bi bi-telephone text-muted me-2"></i> {{ sale.customer.phone }}</li>
-                        <li class="mb-2"><i class="bi bi-geo-alt text-muted me-2"></i> {{ sale.customer.place }}</li>
-                        <li><i class="bi bi-envelope text-muted me-2"></i> {{ sale.customer.email }}</li>
-                    </ul>
+                        <ul class="list-unstyled mb-0 small">
+                            <li class="mb-2"><i class="bi bi-telephone text-muted me-2"></i> {{ sale.customer.phone }}</li>
+                            <li class="mb-2"><i class="bi bi-geo-alt text-muted me-2"></i> {{ sale.customer.place }}</li>
+                            <li><i class="bi bi-envelope text-muted me-2"></i> {{ sale.customer.email }}</li>
+                        </ul>
+                        {% elif sale.farmer_customer %}
+                            <div>
+                                <h6 class="mb-0 fw-bold">{{ sale.farmer_customer.full_name }}</h6>
+                                <small class="text-muted">{{ sale.farmer_customer.farmer_id }}</small>
+                            </div>
+                        </div>
+                        <ul class="list-unstyled mb-0 small">
+                            <li class="mb-2"><i class="bi bi-telephone text-muted me-2"></i> {{ sale.farmer_customer.phone }}</li>
+                            <li class="mb-2"><i class="bi bi-geo-alt text-muted me-2"></i> {{ sale.farmer_customer.place }}</li>
+                            <li><i class="bi bi-envelope text-muted me-2"></i> {{ sale.farmer_customer.email }}</li>
+                        </ul>
+                        {% endif %}
                 </div>
             </div>
         </div>
