@@ -1,0 +1,79 @@
+{% extends 'myapp/erp_base.html' %}
+{% load static %}
+
+{% block erp_content %}
+<div class="container-fluid p-4">
+    <div class="d-flex flex-wrap align-items-center justify-content-between pb-3 mb-4 border-bottom">
+        <div>
+            <h2 class="fw-bold text-success mb-1">
+                <i class="bi bi-shop me-2"></i> Admin Supply Store
+            </h2>
+            <p class="text-muted mb-0">Purchase verified agricultural supplies directly from the platform.</p>
+        </div>
+        <div>
+            <a href="{% url 'farmer_wallet' %}" class="btn btn-outline-success rounded-pill px-4 shadow-sm fw-semibold">
+                <i class="bi bi-wallet2 me-1"></i> Check Wallet
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        {% for supply in supplies %}
+        <div class="col-md-6 col-lg-4 col-xl-3">
+            <div class="card h-100 border-0 shadow-sm rounded-4 hover-lift">
+                {% if supply.image %}
+                    <img src="{{ supply.image.url }}" class="card-img-top rounded-top-4" alt="{{ supply.supply_name }}" style="height: 200px; object-fit: cover;">
+                {% else %}
+                    <div class="bg-light rounded-top-4 d-flex align-items-center justify-content-center text-muted" style="height: 200px;">
+                        <i class="bi bi-image fs-1"></i>
+                    </div>
+                {% endif %}
+                <div class="card-body p-4 d-flex flex-column">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25">{{ supply.category }}</span>
+                        <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25">{{ supply.available_quantity }} in stock</span>
+                    </div>
+                    <h5 class="card-title fw-bold mb-1">{{ supply.supply_name }}</h5>
+                    <p class="card-text text-muted small flex-grow-1">{{ supply.description|truncatewords:20 }}</p>
+                    
+                    <div class="mt-auto pt-3 border-top">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <span class="fs-4 fw-bold text-success">₹{{ supply.price }}</span>
+                                <span class="text-muted small">/ {{ supply.unit }}</span>
+                            </div>
+                        </div>
+                        
+                        <form method="POST" action="{% url 'farmer_purchase_supply' supply.supply_id %}" class="d-flex gap-2">
+                            {% csrf_token %}
+                            <input type="number" name="quantity" class="form-control form-control-sm text-center border-success border-opacity-50" value="1" min="1" max="{{ supply.available_quantity }}" required style="width: 70px;">
+                            <button type="submit" class="btn btn-success flex-grow-1 rounded-pill fw-semibold shadow-sm" onclick="return confirm('Confirm purchase? The amount will be deducted from your wallet.');">
+                                <i class="bi bi-cart-plus me-1"></i> Buy Now
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="text-center py-5 text-muted">
+                <i class="bi bi-inbox fs-1 d-block mb-3"></i>
+                <h4 class="fw-semibold">No supplies available</h4>
+                <p>Check back later for new agricultural supplies.</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+.hover-lift {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.hover-lift:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+}
+</style>
+{% endblock %}

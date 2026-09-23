@@ -609,6 +609,8 @@ class WalletTransaction(models.Model):
         ('WORKER_SALARY_PAYMENT', 'WORKER_SALARY_PAYMENT'),
         ('WALLET_TOPUP', 'WALLET_TOPUP'),
         ('WORKER_SALARY_DISBURSE', 'WORKER_SALARY_DISBURSE'),
+        ('PURCHASE_FROM_ADMIN', 'Purchase from Admin'),
+        ('FARM_SUPPLY_SALE', 'Farm Supply Sale'),
     ]
 
     transaction_id = models.CharField(max_length=20, unique=True, editable=False, blank=True)
@@ -643,3 +645,74 @@ class WalletTransaction(models.Model):
 
     def __str__(self):
         return f"{self.transaction_id} - {self.transaction_type}: ₹{self.amount}"
+
+
+class AdminSupply(models.Model):
+    STATUS_CHOICES = [
+        ('AVAILABLE', 'AVAILABLE'),
+        ('UNAVAILABLE', 'UNAVAILABLE'),
+    ]
+
+    supply_id = models.CharField(max_length=20, unique=True, editable=False, blank=True)
+    supply_name = models.CharField(max_length=150)
+    category = models.CharField(max_length=100)
+    description = models.TextField()
+    price = models.DecimalField(max_digits=10, decimal_places=2)
+    unit = models.CharField(max_length=50)
+    available_quantity = models.PositiveIntegerField()
+    image = models.ImageField(upload_to='supplies/', blank=True, null=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='AVAILABLE')
+    created_date = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'admin_supply'
+
+    def save(self, *args, **kwargs):
+        if not self.supply_id:
+            max_num = 0
+            existing_ids = AdminSupply.objects.values_list('supply_id', flat=True)
+            for sid in existing_ids:
+                if sid and sid.startswith('AS'):
+                    import re
+                    match = re.search(r'\d+', sid)
+                    if match:
+                        num = int(match.group())
+                        if num > max_num:
+                            max_num = num
+            self.supply_id = f"AS{max_num + 1}"
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.supply_id} - {self.supply_name}"
+
+
+class SupplyPurchase(models.Model):
+    purchase_id = models.CharField(max_length=20, unique=True, editable=False, blank=True)
+    farmer = models.ForeignKey(Farmer, on_delete=models.CASCADE, related_name='supply_purchases')
+    supply = models.ForeignKey(AdminSupply, on_delete=models.CASCADE, related_name='purchases')
+    quantity = models.PositiveIntegerField()
+    price_per_unit = models.DecimalField(max_digits=10, decimal_places=2)
+    total_amount = models.DecimalField(max_digits=12, decimal_places=2)
+    purchase_date = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(max_length=20, default='COMPLETED')
+
+    class Meta:
+        db_table = 'supply_purchase'
+
+    def save(self, *args, **kwargs):
+        if not self.purchase_id:
+            max_num = 0
+            existing_ids = SupplyPurchase.objects.values_list('purchase_id', flat=True)
+            for pid in existing_ids:
+                if pid and pid.startswith('SP'):
+                    import re
+                    match = re.search(r'\d+', pid)
+                    if match:
+                        num = int(match.group())
+                        if num > max_num:
+                            max_num = num
+            self.purchase_id = f"SP{max_num + 1}"
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.purchase_id} - {self.farmer.full_name} bought {self.quantity} {self.supply.supply_name}"

@@ -40,6 +40,12 @@
                 </a>
             </li>
             <li class="sidebar-item">
+                <a href="{% url 'admin_supplies' %}" class="sidebar-link {% if 'admin_suppl' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="bi bi-box-seam me-2"></i>
+                    <span>Farm Supplies</span>
+                </a>
+            </li>
+            <li class="sidebar-item">
                 <a href="{% url 'admin_live_rooms' %}" class="sidebar-link {% if request.resolver_match.url_name == 'admin_live_rooms' %}active{% endif %}">
                     <i class="bi bi-broadcast me-2"></i>
                     <span>Live Rooms</span>

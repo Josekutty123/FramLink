@@ -137,6 +137,20 @@
                         <span>My Bids & Results</span>
                     </a>
                 </li>
+                <li class="sidebar-item mt-3 mb-1 px-3 text-uppercase text-light opacity-75 small fw-bold">Buy from Admin</li>
+                <li class="sidebar-item">
+                    <a href="{% url 'farmer_buy_supplies' %}" class="sidebar-link {% if request.resolver_match.url_name == 'farmer_buy_supplies' %}active{% endif %}">
+                        <i class="bi bi-cart"></i>
+                        <span>Browse Supplies</span>
+                    </a>
+                </li>
+                <li class="sidebar-item">
+                    <a href="{% url 'farmer_supply_purchases' %}" class="sidebar-link {% if request.resolver_match.url_name == 'farmer_supply_purchases' %}active{% endif %}">
+                        <i class="bi bi-bag-check"></i>
+                        <span>My Supply Purchases</span>
+                    </a>
+                </li>
+                <li class="sidebar-item mt-3 mb-1 px-3 text-uppercase text-light opacity-75 small fw-bold">Workers</li>
                 <li class="sidebar-item">
                     <a href="{% url 'farmer_worker_requests' %}" class="sidebar-link {% if request.resolver_match.url_name == 'farmer_worker_requests' or request.resolver_match.url_name == 'farmer_request_workers' or request.resolver_match.url_name == 'farmer_wage_negotiation' %}active{% endif %}">
                         <i class="bi bi-people"></i>

@@ -1,0 +1,73 @@
+{% extends 'myapp/erp_base.html' %}
+{% load static %}
+
+{% block erp_content %}
+<div class="container-fluid p-4">
+    <div class="d-flex flex-wrap align-items-center justify-content-between pb-3 mb-4 border-bottom">
+        <div>
+            <h2 class="fw-bold text-success mb-1">
+                <i class="bi bi-bag-check me-2"></i> My Supply Purchases
+            </h2>
+            <p class="text-muted mb-0">Track all farm supplies you have purchased from the platform.</p>
+        </div>
+        <div>
+            <a href="{% url 'farmer_buy_supplies' %}" class="btn btn-success rounded-pill px-4 shadow-sm fw-semibold">
+                <i class="bi bi-shop me-1"></i> Browse Supplies
+            </a>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body p-4">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light text-secondary">
+                        <tr>
+                            <th>Purchase ID</th>
+                            <th>Date</th>
+                            <th>Supply</th>
+                            <th>Qty</th>
+                            <th>Price/Unit</th>
+                            <th>Total Amount</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for purchase in purchases %}
+                        <tr>
+                            <td class="fw-bold text-dark">{{ purchase.purchase_id }}</td>
+                            <td>{{ purchase.purchase_date|date:"d M Y, h:i A" }}</td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    {% if purchase.supply.image %}
+                                        <img src="{{ purchase.supply.image.url }}" alt="{{ purchase.supply.supply_name }}" class="rounded shadow-sm me-3" style="width: 50px; height: 50px; object-fit: cover;">
+                                    {% else %}
+                                        <div class="bg-light rounded d-flex align-items-center justify-content-center text-muted shadow-sm me-3" style="width: 50px; height: 50px;">
+                                            <i class="bi bi-image"></i>
+                                        </div>
+                                    {% endif %}
+                                    <div class="fw-semibold">{{ purchase.supply.supply_name }}</div>
+                                </div>
+                            </td>
+                            <td><span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25">{{ purchase.quantity }} {{ purchase.supply.unit }}</span></td>
+                            <td>₹{{ purchase.price_per_unit }}</td>
+                            <td class="text-success fw-bold">₹{{ purchase.total_amount }}</td>
+                            <td>
+                                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">{{ purchase.status }}</span>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center py-4 text-muted">
+                                <i class="bi bi-inbox fs-2 d-block mb-2"></i>
+                                You haven't purchased any supplies yet.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

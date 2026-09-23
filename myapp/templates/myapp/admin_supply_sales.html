@@ -1,0 +1,68 @@
+{% extends 'myapp/admin_base.html' %}
+{% load static %}
+
+{% block admin_content %}
+<div class="container-fluid p-4">
+    <div class="d-flex flex-wrap align-items-center justify-content-between pb-3 mb-4 border-bottom">
+        <div>
+            <h2 class="fw-bold text-success mb-1">
+                <i class="bi bi-graph-up-arrow me-2"></i> Supply Sales History
+            </h2>
+            <p class="text-muted mb-0">View all farm supply purchases made by farmers.</p>
+        </div>
+        <div class="text-end">
+            <div class="text-muted small fw-semibold text-uppercase">Total Sales Revenue</div>
+            <div class="fs-4 fw-bold text-success">₹{{ total_sales }}</div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body p-4">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light text-secondary">
+                        <tr>
+                            <th>Purchase ID</th>
+                            <th>Date</th>
+                            <th>Farmer</th>
+                            <th>Supply</th>
+                            <th>Qty</th>
+                            <th>Price/Unit</th>
+                            <th>Total Amount</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for purchase in purchases %}
+                        <tr>
+                            <td class="fw-bold text-dark">{{ purchase.purchase_id }}</td>
+                            <td>{{ purchase.purchase_date|date:"d M Y, h:i A" }}</td>
+                            <td>
+                                <div class="fw-semibold">{{ purchase.farmer.full_name }}</div>
+                                <div class="text-muted small">{{ purchase.farmer.farmer_id }}</div>
+                            </td>
+                            <td>
+                                <div class="fw-semibold">{{ purchase.supply.supply_name }}</div>
+                            </td>
+                            <td><span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25">{{ purchase.quantity }} {{ purchase.supply.unit }}</span></td>
+                            <td>₹{{ purchase.price_per_unit }}</td>
+                            <td class="text-success fw-bold">₹{{ purchase.total_amount }}</td>
+                            <td>
+                                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">{{ purchase.status }}</span>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center py-4 text-muted">
+                                <i class="bi bi-inbox fs-2 d-block mb-2"></i>
+                                No supply sales recorded yet.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

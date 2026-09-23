@@ -60,6 +60,13 @@ urlpatterns = [
     path('admin/wallet/', views.admin_wallet_view, name='admin_wallet'),
     path('admin/sales/', views.admin_sales_history_view, name='admin_sales_history'),
     path('admin/sales/<str:sale_id>/', views.admin_sale_details_view, name='admin_sale_details'),
+    
+    # Admin Farm Supplies URLs
+    path('admin/supplies/', views.admin_supplies_view, name='admin_supplies'),
+    path('admin/supplies/add/', views.admin_add_supply_view, name='admin_add_supply'),
+    path('admin/supplies/edit/<str:supply_id>/', views.admin_edit_supply_view, name='admin_edit_supply'),
+    path('admin/supplies/delete/<str:supply_id>/', views.admin_delete_supply_view, name='admin_delete_supply'),
+    path('admin/supplies/sales/', views.admin_supply_sales_view, name='admin_supply_sales'),
 
     path('farmer/products/', views.farmer_products_view, name='farmer_products'),
     path('farmer/products/add/', views.farmer_add_product_view, name='farmer_add_product'),
@@ -67,6 +74,11 @@ urlpatterns = [
     path('farmer/products/delete/<str:product_id>/', views.farmer_delete_product_view, name='farmer_delete_product'),
     path('farmer/wallet/', views.farmer_wallet_view, name='farmer_wallet'),
     path('farmer/my-bids/', views.farmer_bids_view, name='farmer_bids'),
+    
+    # Farmer Farm Supplies URLs
+    path('farmer/supplies/', views.farmer_buy_supplies_view, name='farmer_buy_supplies'),
+    path('farmer/supplies/purchase/<str:supply_id>/', views.farmer_purchase_supply_view, name='farmer_purchase_supply'),
+    path('farmer/supplies/purchases/', views.farmer_supply_purchases_view, name='farmer_supply_purchases'),
 
     path('explore-products/', views.explore_products_view, name='explore_products'),
     path('marketplace/join/<str:product_id>/', views.join_bargaining_view, name='join_bargaining'),

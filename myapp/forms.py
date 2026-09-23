@@ -1,6 +1,6 @@
 from django import forms
 from django.core.validators import MinValueValidator
-from .models import Farmer, Customer, Worker, Delivery, MarketSettings, Product, BargainingBid, WorkerRequest, WorkerWageOffer, WorkerTask, WalletTransaction, WorkerSalarySettlement
+from .models import Farmer, Customer, Worker, Delivery, MarketSettings, Product, BargainingBid, WorkerRequest, WorkerWageOffer, WorkerTask, WalletTransaction, WorkerSalarySettlement, AdminSupply, SupplyPurchase
 
 class RegistrationValidationMixin:
     def clean_phone(self):
@@ -432,7 +432,7 @@ class ProductForm(forms.ModelForm):
             'quantity': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '1', 'placeholder': 'Quantity available'}),
             'unit': forms.Select(attrs={'class': 'form-select'}),
             'price_per_unit': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '1', 'placeholder': 'Starting Price per Unit (₹)'}),
-            'image': forms.FileInput(attrs={'class': 'form-control', 'accept': 'image/png,image/jpeg'}),
+            'image': forms.FileInput(attrs={'class': 'form-control', 'accept': '.png, .jpg, .jpeg, image/png, image/jpeg'}),
         }
         error_messages = {
             'image': {
@@ -593,3 +593,60 @@ class WorkerTaskForm(forms.ModelForm):
         if val is not None and val <= 0:
             raise forms.ValidationError("Duration must be greater than 0.")
         return val
+
+
+class AdminSupplyForm(forms.ModelForm):
+    class Meta:
+        model = AdminSupply
+        fields = ['supply_name', 'category', 'description', 'price', 'unit', 'available_quantity', 'image', 'status']
+        widgets = {
+            'supply_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. Tomato Seeds'}),
+            'category': forms.Select(choices=[
+                ('Seeds', 'Seeds'),
+                ('Plants', 'Plants'),
+                ('Fertilizers', 'Fertilizers'),
+                ('Equipment', 'Equipment'),
+                ('Other', 'Other'),
+            ], attrs={'class': 'form-select'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Supply description...'}),
+            'price': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0.01'}),
+            'unit': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. Packet, Kg, Bottle'}),
+            'available_quantity': forms.NumberInput(attrs={'class': 'form-control', 'min': '0'}),
+            'image': forms.FileInput(attrs={'class': 'form-control', 'accept': '.png, .jpg, .jpeg, image/png, image/jpeg'}),
+            'status': forms.Select(attrs={'class': 'form-select'}),
+        }
+        error_messages = {
+            'image': {
+                'invalid_image': "Please upload an image in JPG, JPEG, or PNG format.",
+            }
+        }
+
+    def clean_price(self):
+        val = self.cleaned_data.get('price')
+        if val is not None and val <= 0:
+            raise forms.ValidationError("Price must be greater than 0.")
+        return val
+
+    def clean_image(self):
+        image = self.cleaned_data.get('image')
+        if not image:
+            return image
+
+        if hasattr(image, 'name'):
+            import os
+            ext = os.path.splitext(image.name)[1].lower()
+            if ext not in ['.jpg', '.jpeg', '.png']:
+                raise forms.ValidationError("Please upload an image in JPG, JPEG, or PNG format.")
+            
+            try:
+                from PIL import Image
+                img = Image.open(image)
+                img.verify()
+                if img.format.upper() not in ['JPEG', 'PNG']:
+                    raise forms.ValidationError("Please upload an image in JPG, JPEG, or PNG format.")
+                image.seek(0)
+            except Exception:
+                raise forms.ValidationError("Please upload an image in JPG, JPEG, or PNG format.")
+                
+        return image
+

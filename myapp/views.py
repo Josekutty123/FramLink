@@ -8,7 +8,7 @@ from django.db import transaction
 from .models import (
     Farmer, Admin, Customer, Worker, Delivery, DeliveryOrder,
     MarketSettings, Product, BargainingBid, FarmerWallet, AdminWallet, Sale,
-    WorkerRequest, WorkerWageOffer, WorkerTask, WorkerSalarySettlement, WalletTransaction
+    WorkerRequest, WorkerWageOffer, WorkerTask, WorkerSalarySettlement, WalletTransaction, AdminSupply, SupplyPurchase
 )
 from .forms import (
     FarmerRegistrationForm, FarmerLoginForm, FarmerProfileForm, AdminLoginForm,
@@ -16,7 +16,7 @@ from .forms import (
     WorkerRegistrationForm, WorkerLoginForm, WorkerProfileForm,
     DeliveryRegistrationForm, DeliveryLoginForm, DeliveryProfileForm, AdminDeliveryForm,
     MarketSettingsForm, ProductForm, BidForm,
-    AdminWorkerForm, WorkerRequestForm, WorkerWageOfferForm, WorkerTaskForm
+    AdminWorkerForm, WorkerRequestForm, WorkerWageOfferForm, WorkerTaskForm, AdminSupplyForm
 )
 
 
@@ -1929,3 +1929,163 @@ def worker_mark_task_completed_view(request, task_id):
         messages.success(request, "Work marked as completed. Waiting for farmer confirmation.")
         
     return redirect('worker_dashboard')
+
+# ====================================================
+# ADMIN SUPPLY STORE (NEW FEATURE)
+# ====================================================
+
+def admin_supplies_view(request):
+    admin = get_current_admin(request)
+    if not admin:
+        return redirect('admin_login')
+    supplies = AdminSupply.objects.all().order_by('-created_date')
+    return render(request, 'myapp/admin_supplies.html', {'admin': admin, 'supplies': supplies})
+
+def admin_add_supply_view(request):
+    admin = get_current_admin(request)
+    if not admin:
+        return redirect('admin_login')
+
+    if request.method == 'POST':
+        form = AdminSupplyForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Supply added successfully.")
+            return redirect('admin_supplies')
+    else:
+        form = AdminSupplyForm()
+    
+    return render(request, 'myapp/admin_add_supply.html', {'admin': admin, 'form': form, 'is_edit': False})
+
+def admin_edit_supply_view(request, supply_id):
+    admin = get_current_admin(request)
+    if not admin:
+        return redirect('admin_login')
+        
+    supply = get_object_or_404(AdminSupply, supply_id=supply_id)
+    if request.method == 'POST':
+        form = AdminSupplyForm(request.POST, request.FILES, instance=supply)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Supply updated successfully.")
+            return redirect('admin_supplies')
+    else:
+        form = AdminSupplyForm(instance=supply)
+
+    return render(request, 'myapp/admin_add_supply.html', {'admin': admin, 'form': form, 'is_edit': True, 'supply': supply})
+
+def admin_delete_supply_view(request, supply_id):
+    admin = get_current_admin(request)
+    if not admin:
+        return redirect('admin_login')
+    
+    supply = get_object_or_404(AdminSupply, supply_id=supply_id)
+    if request.method == 'POST':
+        supply.delete()
+        messages.success(request, "Supply deleted successfully.")
+    return redirect('admin_supplies')
+
+def admin_supply_sales_view(request):
+    admin = get_current_admin(request)
+    if not admin:
+        return redirect('admin_login')
+    
+    purchases = SupplyPurchase.objects.all().order_by('-purchase_date')
+    total_sales = sum([p.total_amount for p in purchases]) if purchases else Decimal('0.00')
+    
+    return render(request, 'myapp/admin_supply_sales.html', {'admin': admin, 'purchases': purchases, 'total_sales': total_sales})
+
+def farmer_buy_supplies_view(request):
+    farmer = get_current_farmer(request)
+    if not farmer:
+        return redirect('farmer_login')
+        
+    supplies = AdminSupply.objects.filter(status='AVAILABLE', available_quantity__gt=0).order_by('-created_date')
+    return render(request, 'myapp/farmer_buy_supplies.html', {'farmer': farmer, 'supplies': supplies})
+
+def farmer_purchase_supply_view(request, supply_id):
+    farmer = get_current_farmer(request)
+    if not farmer:
+        return redirect('farmer_login')
+        
+    supply = get_object_or_404(AdminSupply, supply_id=supply_id, status='AVAILABLE')
+    
+    if request.method == 'POST':
+        try:
+            quantity = int(request.POST.get('quantity', 0))
+            if quantity <= 0:
+                messages.error(request, "Invalid quantity.")
+                return redirect('farmer_buy_supplies')
+                
+            if quantity > supply.available_quantity:
+                messages.error(request, "Requested quantity exceeds available stock.")
+                return redirect('farmer_buy_supplies')
+                
+            total_amount = Decimal(quantity) * supply.price
+            
+            with transaction.atomic():
+                # Lock rows for atomic update
+                supply = AdminSupply.objects.select_for_update().get(supply_id=supply_id)
+                farmer_wallet, _ = FarmerWallet.objects.select_for_update().get_or_create(farmer=farmer)
+                
+                # Double check after lock
+                if quantity > supply.available_quantity:
+                    messages.error(request, "Requested quantity exceeds available stock.")
+                    return redirect('farmer_buy_supplies')
+                    
+                if farmer_wallet.balance < total_amount:
+                    messages.error(request, "Insufficient wallet balance. Please add money to your wallet.")
+                    return redirect('farmer_buy_supplies')
+                
+                admin = Admin.objects.first()
+                admin_wallet, _ = AdminWallet.objects.select_for_update().get_or_create(admin=admin)
+                
+                prev_farmer_balance = farmer_wallet.balance
+                farmer_wallet.balance -= total_amount
+                farmer_wallet.save()
+                
+                prev_admin_balance = admin_wallet.balance
+                admin_wallet.balance += total_amount
+                admin_wallet.save()
+                
+                supply.available_quantity -= quantity
+                if supply.available_quantity == 0:
+                    supply.status = 'UNAVAILABLE'
+                supply.save()
+                
+                purchase = SupplyPurchase.objects.create(
+                    farmer=farmer,
+                    supply=supply,
+                    quantity=quantity,
+                    price_per_unit=supply.price,
+                    total_amount=total_amount
+                )
+                
+                WalletTransaction.objects.create(
+                    farmer=farmer,
+                    admin=admin,
+                    amount=total_amount,
+                    transaction_type='PURCHASE_FROM_ADMIN',
+                    prev_farmer_balance=prev_farmer_balance,
+                    new_farmer_balance=farmer_wallet.balance,
+                    prev_admin_balance=prev_admin_balance,
+                    new_admin_balance=admin_wallet.balance
+                )
+                
+            messages.success(request, f"Successfully purchased {quantity} {supply.unit} of {supply.supply_name}.")
+            return redirect('farmer_supply_purchases')
+            
+        except ValueError:
+            messages.error(request, "Invalid input.")
+        except Exception as e:
+            messages.error(request, f"An error occurred: {str(e)}")
+            
+    return redirect('farmer_buy_supplies')
+
+def farmer_supply_purchases_view(request):
+    farmer = get_current_farmer(request)
+    if not farmer:
+        return redirect('farmer_login')
+        
+    purchases = SupplyPurchase.objects.filter(farmer=farmer).order_by('-purchase_date')
+    return render(request, 'myapp/farmer_supply_purchases.html', {'farmer': farmer, 'purchases': purchases})
