@@ -73,5 +73,61 @@
             </div>
         </div>
     </div>
+    
+    <!-- Purchased / Won Products Table -->
+    <div class="card shadow-sm border-0 rounded-4 mt-5">
+        <div class="card-header bg-white py-3">
+            <h6 class="m-0 font-weight-bold text-success"><i class="bi bi-bag-fill me-2"></i> Won Products (Deliveries)</h6>
+        </div>
+        <div class="card-body p-0">
+            {% if purchases %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0 text-nowrap">
+                        <thead class="table-light text-muted small">
+                            <tr>
+                                <th>Sale ID</th>
+                                <th>Product</th>
+                                <th>Quantity</th>
+                                <th>Total Amount</th>
+                                <th>Sale Status</th>
+                                <th>Delivery Info & Action</th>
+                            </tr>
+                        </thead>
+                        <tbody class="border-top-0">
+                            {% for p in purchases %}
+                                <tr>
+                                    <td class="fw-bold">{{ p.sale_id }}</td>
+                                    <td>{{ p.product.product_name }}</td>
+                                    <td>{{ p.quantity }} {{ p.product.unit }}</td>
+                                    <td class="text-success fw-bold">₹{{ p.total_amount }}</td>
+                                    <td><span class="badge bg-success rounded-pill px-3">WON</span></td>
+                                    <td>
+                                        {% if p.delivery_orders.first %}
+                                            {% with order=p.delivery_orders.first %}
+                                                <div class="small mb-1">Status: <strong>{{ order.status }}</strong></div>
+                                                {% if order.status == 'AWAITING_CUSTOMER_CONFIRMATION' %}
+                                                    <form method="post" action="{% url 'farmer_confirm_delivery' order.order_id %}" onsubmit="return confirm('Have you received the product?');">
+                                                        {% csrf_token %}
+                                                        <button type="submit" class="btn btn-sm btn-success mt-1 shadow-sm"><i class="bi bi-check-circle me-1"></i>Confirm Product Received</button>
+                                                    </form>
+                                                {% endif %}
+                                            {% endwith %}
+                                        {% else %}
+                                            <span class="badge bg-secondary">Processing</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-5 text-muted">
+                    <i class="bi bi-inbox fs-1 d-block mb-3 opacity-25"></i>
+                    You have not won any products yet.
+                </div>
+            {% endif %}
+        </div>
+    </div>
 </div>
 {% endblock erp_content %}

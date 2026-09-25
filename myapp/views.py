@@ -432,12 +432,40 @@ def farmer_bids_view(request):
 
     # Get unique products the farmer bid on
     bid_products = Product.objects.filter(bids__farmer_bidder=farmer).distinct().order_by('-created_at')
+    
+    # Get products the farmer has purchased (won)
+    purchases = Sale.objects.filter(farmer_customer=farmer).order_by('-sale_date')
 
     context = {
         'farmer': farmer,
         'bid_products': bid_products,
+        'purchases': purchases,
     }
     return render(request, 'myapp/farmer_bids.html', context)
+
+
+def farmer_confirm_delivery_view(request, order_id):
+    farmer = get_current_farmer(request)
+    if not farmer:
+        messages.error(request, "Please log in to confirm delivery.")
+        return redirect('login')
+
+    if request.method == 'POST':
+        order = get_object_or_404(DeliveryOrder, order_id=order_id, sale__farmer_customer=farmer)
+        if order.status == 'AWAITING_CUSTOMER_CONFIRMATION':
+            order.status = 'DELIVERED'
+            order.customer_confirmation_date = timezone.now()
+            order.save()
+
+            if order.delivery_person:
+                order.delivery_person.status = 'AVAILABLE'
+                order.delivery_person.save()
+
+            messages.success(request, "Product receipt confirmed successfully!")
+        else:
+            messages.error(request, "This order is not awaiting confirmation.")
+    
+    return redirect('farmer_bids')
 
 
 # ====================================================
@@ -1589,35 +1617,43 @@ def admin_assign_workers_view(request, request_id):
     
     if request.method == 'POST':
         selected_worker_ids = request.POST.getlist('worker_ids')
-        if len(selected_worker_ids) != worker_request.num_workers:
+        available_workers_count = available_workers.count()
+        
+        if worker_request.num_workers > available_workers_count:
+            messages.error(request, f"Cannot assign workers. Only {available_workers_count} of the required {worker_request.num_workers} workers are currently available.")
+        elif len(selected_worker_ids) != worker_request.num_workers:
             messages.error(request, f"Please select exactly {worker_request.num_workers} workers.")
         else:
-            total_wage = worker_request.requested_wage * worker_request.num_workers * worker_request.duration_days
-            
-            with transaction.atomic():
-                task = WorkerTask.objects.create(
-                    farmer=worker_request.farmer,
-                    worker_request=worker_request,
-                    work_description=worker_request.work_description,
-                    location=worker_request.location,
-                    start_date=worker_request.start_date,
-                    duration_days=worker_request.duration_days,
-                    daily_wage=worker_request.requested_wage,
-                    total_salary=total_wage,
-                    status='ASSIGNED'
-                )
+            selected_workers = Worker.objects.filter(worker_id__in=selected_worker_ids, status='AVAILABLE')
+            if selected_workers.count() != worker_request.num_workers:
+                messages.error(request, "One or more selected workers are no longer available. Please refresh and try again.")
+            else:
+                total_wage = worker_request.requested_wage * worker_request.num_workers * worker_request.duration_days
                 
-                workers_to_assign = Worker.objects.filter(worker_id__in=selected_worker_ids)
-                for w in workers_to_assign:
-                    w.status = 'ASSIGNED'
-                    w.save()
-                    task.workers.add(w)
+                with transaction.atomic():
+                    task = WorkerTask.objects.create(
+                        farmer=worker_request.farmer,
+                        worker_request=worker_request,
+                        work_description=worker_request.work_description,
+                        location=worker_request.location,
+                        start_date=worker_request.start_date,
+                        duration_days=worker_request.duration_days,
+                        daily_wage=worker_request.requested_wage,
+                        total_salary=total_wage,
+                        status='ASSIGNED'
+                    )
                     
-                worker_request.status = 'WORKERS_ASSIGNED'
-                worker_request.save()
-                
-            messages.success(request, f"Assigned {worker_request.num_workers} workers to request {worker_request.request_id}.")
-            return redirect('admin_worker_requests')
+                    workers_to_assign = selected_workers
+                    for w in workers_to_assign:
+                        w.status = 'ASSIGNED'
+                        w.save()
+                        task.workers.add(w)
+                        
+                    worker_request.status = 'WORKERS_ASSIGNED'
+                    worker_request.save()
+                    
+                messages.success(request, f"Assigned {worker_request.num_workers} workers to request {worker_request.request_id}.")
+                return redirect('admin_worker_requests')
             
     return render(request, 'myapp/admin_assign_workers.html', {
         'admin': admin,
@@ -1716,7 +1752,8 @@ def farmer_request_workers_view(request):
     else:
         form = WorkerRequestForm()
         
-    return render(request, 'myapp/farmer_request_workers.html', {'farmer': farmer, 'form': form})
+    available_workers_count = Worker.objects.filter(status='AVAILABLE').count()
+    return render(request, 'myapp/farmer_request_workers.html', {'farmer': farmer, 'form': form, 'available_workers_count': available_workers_count})
 
 def farmer_wage_negotiation_view(request, request_id):
     farmer = get_current_farmer(request)

@@ -8,10 +8,38 @@
             <form method="post">
                 {% csrf_token %}
                 {{ form.as_p }}
+                <div class="alert alert-info mt-3" id="availability-info">
+                    Current Available Workers: <strong>{{ available_workers_count }}</strong>
+                </div>
+                <div class="alert alert-warning mt-2 d-none" id="availability-warning">
+                    Only <span id="available-count-span">{{ available_workers_count }}</span> worker(s) currently available. Your request requires <span id="requested-count-span"></span> workers. 
+                    (Your request will be pending until enough workers are available).
+                </div>
                 <button type="submit" class="btn btn-success mt-3">Submit Request</button>
                 <a href="{% url 'farmer_worker_requests' %}" class="btn btn-secondary mt-3">Cancel</a>
             </form>
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const numWorkersInput = document.getElementById('id_num_workers');
+    const warningDiv = document.getElementById('availability-warning');
+    const requestedCountSpan = document.getElementById('requested-count-span');
+    const availableWorkers = parseInt('{{ available_workers_count }}') || 0;
+
+    if (numWorkersInput) {
+        numWorkersInput.addEventListener('input', function() {
+            const requested = parseInt(this.value) || 0;
+            if (requested > availableWorkers) {
+                requestedCountSpan.textContent = requested;
+                warningDiv.classList.remove('d-none');
+            } else {
+                warningDiv.classList.add('d-none');
+            }
+        });
+    }
+});
+</script>
 {% endblock %}

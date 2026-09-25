@@ -74,6 +74,7 @@ urlpatterns = [
     path('farmer/products/delete/<str:product_id>/', views.farmer_delete_product_view, name='farmer_delete_product'),
     path('farmer/wallet/', views.farmer_wallet_view, name='farmer_wallet'),
     path('farmer/my-bids/', views.farmer_bids_view, name='farmer_bids'),
+    path('farmer/confirm-delivery/<str:order_id>/', views.farmer_confirm_delivery_view, name='farmer_confirm_delivery'),
     
     # Farmer Farm Supplies URLs
     path('farmer/supplies/', views.farmer_buy_supplies_view, name='farmer_buy_supplies'),

@@ -12,9 +12,22 @@
     <div class="alert alert-info">
         <strong>Workers Required:</strong> {{ worker_request.num_workers }} <br>
         <strong>Agreed Wage:</strong> ₹{{ worker_request.requested_wage }}/day <br>
-        <strong>Duration:</strong> {{ worker_request.duration_days }} days
+        <strong>Duration:</strong> {{ worker_request.duration_days }} days <br>
+        <strong>Available Workers:</strong> {{ available_workers|length }}
     </div>
+
+    {% if worker_request.num_workers > available_workers|length %}
+    <div class="alert alert-danger">
+        <strong>WARNING:</strong> Insufficient workers available. {{ worker_request.num_workers }} workers are required, but only {{ available_workers|length }} worker(s) is currently available.
+    </div>
+    {% endif %}
     
+    {% if worker_request.num_workers <= available_workers|length %}
+    <div class="alert alert-warning">
+        Please select exactly {{ worker_request.num_workers }} worker(s) to assign.
+    </div>
+    {% endif %}
+
     <div class="card shadow-sm">
         <div class="card-body">
             <form method="post">
@@ -41,7 +54,11 @@
                         {% endfor %}
                     </tbody>
                 </table>
-                <button type="submit" class="btn btn-primary mt-3">Assign Selected Workers</button>
+                {% if worker_request.num_workers > available_workers|length %}
+                    <button type="button" class="btn btn-primary mt-3" disabled>Assign Selected Workers</button>
+                {% else %}
+                    <button type="submit" class="btn btn-primary mt-3">Assign Selected Workers</button>
+                {% endif %}
             </form>
         </div>
     </div>
