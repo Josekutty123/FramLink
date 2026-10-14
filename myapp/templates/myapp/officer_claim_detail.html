@@ -1,0 +1,54 @@
+{% extends 'myapp/erp_base.html' %}
+{% block title %}Review Claim {{ claim.claim_id }}{% endblock %}
+{% block erp_content %}
+<div class="container-fluid px-0">
+    <h3 class="fw-bold mb-4">Review Claim: {{ claim.claim_id }}</h3>
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card shadow-sm border-0 mb-4 rounded-4">
+                <div class="card-header bg-white py-3"><h5 class="mb-0 fw-bold text-success">Claim & Coverage Assessment</h5></div>
+                <div class="card-body">
+                    <p class="mb-2"><strong>Farmer:</strong> {{ claim.enrollment.farmer.full_name }} ({{ claim.enrollment.farmer.farmer_id }})</p>
+                    <p class="mb-2"><strong>Policy:</strong> {{ claim.enrollment.policy.name }}</p>
+                    <p class="mb-2"><strong>Insured Crop:</strong> {{ claim.enrollment.crop_name }} ({{ claim.enrollment.farm_area }} acres)</p>
+                    <p class="mb-2"><strong>Policy Coverage Dates:</strong> {{ claim.enrollment.coverage_period_start|date:"d M Y" }} to {{ claim.enrollment.coverage_period_end|date:"d M Y" }}</p>
+                    <p class="mb-2">
+                        <strong>Max Policy Coverage Limit:</strong> 
+                        <span class="badge bg-success-subtle text-success fs-6">₹{{ claim.enrollment.policy.max_coverage_amount }}</span>
+                    </p>
+                    <p class="mb-2"><strong>Covered Risks:</strong> {{ claim.enrollment.policy.covered_risks }}</p>
+                    <hr>
+                    <p class="mb-2"><strong>Reported Incident:</strong> {{ claim.incident_type }}</p>
+                    <p class="mb-2"><strong>Incident Date:</strong> {{ claim.incident_date|date:"d M Y" }}</p>
+                    <p class="mb-2"><strong>Incident Location:</strong> {{ claim.incident_location }}</p>
+                    <p class="mb-2"><strong>Affected Farm Area:</strong> {{ claim.affected_farm_area }} acres</p>
+                    <p class="mb-2"><strong>Farmer's Estimated Loss:</strong> <span class="fw-bold text-danger">₹{{ claim.estimated_financial_loss }}</span></p>
+                    <p class="mb-2"><strong>Damage Description:</strong></p>
+                    <div class="p-3 bg-light rounded small mb-2">{{ claim.damage_description }}</div>
+                    {% if claim.evidence_file %}
+                    <p class="mb-0"><strong>Uploaded Evidence:</strong> <a href="{{ claim.evidence_file.url }}" target="_blank" class="btn btn-sm btn-outline-primary ms-2"><i class="bi bi-file-earmark-arrow-down"></i> View Evidence Document/Photo</a></p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card shadow-sm border-0 rounded-4">
+                <div class="card-header bg-white py-3"><h5 class="mb-0 fw-bold text-primary">Officer Review & Decision</h5></div>
+                <div class="card-body">
+                    <div class="alert alert-warning py-2 small mb-3">
+                        <i class="bi bi-shield-lock-fill me-1"></i>
+                        <strong>Coverage Rule:</strong> Maximum compensation limit for this policy is <strong>₹{{ claim.enrollment.policy.max_coverage_amount }}</strong>. Approved compensation must be based on verified loss and policy terms.
+                    </div>
+                    <form method="post">
+                        {% csrf_token %}
+                        {{ form.as_p }}
+                        <button type="submit" class="btn btn-primary w-100 mt-3 rounded-pill py-2 fw-semibold">
+                            Submit Official Decision
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

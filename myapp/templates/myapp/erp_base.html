@@ -98,6 +98,55 @@
                     </a>
                 </li>
             </ul>
+        {% elif request.session.officer_id %}
+            <a href="{% url 'officer_dashboard' %}" class="sidebar-brand">
+                <i class="bi bi-shield-check text-primary"></i>
+                <span>FarmLink Officer</span>
+            </a>
+            <ul class="sidebar-menu">
+                <li class="sidebar-item">
+                    <a href="{% url 'officer_dashboard' %}" class="sidebar-link {% if request.resolver_match.url_name == 'officer_dashboard' %}active{% endif %}">
+                        <i class="bi bi-grid-1x2-fill"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li class="sidebar-item">
+                    <a href="{% url 'officer_policies' %}" class="sidebar-link {% if request.resolver_match.url_name == 'officer_policies' or request.resolver_match.url_name == 'officer_add_policy' or request.resolver_match.url_name == 'officer_edit_policy' %}active{% endif %}">
+                        <i class="bi bi-file-earmark-text"></i>
+                        <span>Manage Policies</span>
+                    </a>
+                </li>
+                <li class="sidebar-item">
+                    <a href="{% url 'officer_enrollments' %}" class="sidebar-link {% if request.resolver_match.url_name == 'officer_enrollments' %}active{% endif %}">
+                        <i class="bi bi-people"></i>
+                        <span>Enrolled Farmers</span>
+                    </a>
+                </li>
+                <li class="sidebar-item">
+                    <a href="{% url 'officer_premiums' %}" class="sidebar-link {% if request.resolver_match.url_name == 'officer_premiums' %}active{% endif %}">
+                        <i class="bi bi-cash-stack"></i>
+                        <span>Premium Payments</span>
+                    </a>
+                </li>
+                <li class="sidebar-item">
+                    <a href="{% url 'officer_claims' %}" class="sidebar-link {% if request.resolver_match.url_name == 'officer_claims' or request.resolver_match.url_name == 'officer_claim_detail' %}active{% endif %}">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <span>Insurance Claims</span>
+                    </a>
+                </li>
+                <li class="sidebar-item">
+                    <a href="{% url 'officer_settlements' %}" class="sidebar-link {% if request.resolver_match.url_name == 'officer_settlements' %}active{% endif %}">
+                        <i class="bi bi-check-circle"></i>
+                        <span>Claim Settlements</span>
+                    </a>
+                </li>
+                <li class="sidebar-item mt-4">
+                    <a href="{% url 'officer_logout' %}" class="sidebar-link text-danger">
+                        <i class="bi bi-box-arrow-right"></i>
+                        <span>Logout</span>
+                    </a>
+                </li>
+            </ul>
         {% else %}
             <!-- Default Farmer Sidebar -->
             <a href="{% url 'dashboard' %}" class="sidebar-brand">
@@ -148,6 +197,37 @@
                     <a href="{% url 'farmer_supply_purchases' %}" class="sidebar-link {% if request.resolver_match.url_name == 'farmer_supply_purchases' %}active{% endif %}">
                         <i class="bi bi-bag-check"></i>
                         <span>My Supply Purchases</span>
+                    </a>
+                </li>
+                <li class="sidebar-item mt-3 mb-1 px-3 text-uppercase text-light opacity-75 small fw-bold">Insurance</li>
+                <li class="sidebar-item">
+                    <a href="{% url 'farmer_insurance' %}" class="sidebar-link {% if request.resolver_match.url_name == 'farmer_insurance' or request.resolver_match.url_name == 'farmer_buy_insurance' %}active{% endif %}">
+                        <i class="bi bi-shield-plus"></i>
+                        <span>Available Policies</span>
+                    </a>
+                </li>
+                <li class="sidebar-item">
+                    <a href="{% url 'farmer_my_policies' %}" class="sidebar-link {% if request.resolver_match.url_name == 'farmer_my_policies' or request.resolver_match.url_name == 'farmer_pay_premium' %}active{% endif %}">
+                        <i class="bi bi-shield-check"></i>
+                        <span>My Active Policies</span>
+                    </a>
+                </li>
+                <li class="sidebar-item">
+                    <a href="{% url 'farmer_premium_history' %}" class="sidebar-link {% if request.resolver_match.url_name == 'farmer_premium_history' %}active{% endif %}">
+                        <i class="bi bi-clock-history"></i>
+                        <span>Premium History</span>
+                    </a>
+                </li>
+                <li class="sidebar-item">
+                    <a href="{% url 'farmer_apply_claim' %}" class="sidebar-link {% if request.resolver_match.url_name == 'farmer_apply_claim' %}active{% endif %}">
+                        <i class="bi bi-file-earmark-plus"></i>
+                        <span>Apply for Claim</span>
+                    </a>
+                </li>
+                <li class="sidebar-item">
+                    <a href="{% url 'farmer_my_claims' %}" class="sidebar-link {% if request.resolver_match.url_name == 'farmer_my_claims' %}active{% endif %}">
+                        <i class="bi bi-file-earmark-text"></i>
+                        <span>My Insurance Claims</span>
                     </a>
                 </li>
                 <li class="sidebar-item mt-3 mb-1 px-3 text-uppercase text-light opacity-75 small fw-bold">Workers</li>

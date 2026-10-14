@@ -54,6 +54,11 @@ urlpatterns = [
     path('admin/live-rooms/', views.admin_live_rooms_view, name='admin_live_rooms'),
     path('admin/logout/', views.admin_logout_view, name='admin_logout'),
 
+    path('admin/insurance/officers/', views.admin_officers_view, name='admin_officers'),
+    path('admin/insurance/officers/add/', views.admin_add_officer_view, name='admin_add_officer'),
+    path('admin/insurance/officers/toggle/<str:officer_id>/', views.admin_toggle_officer_view, name='admin_toggle_officer'),
+    path('admin/insurance/dashboard/', views.admin_insurance_dashboard_view, name='admin_insurance_dashboard'),
+    
     # Marketplace Module URLs
     path('admin/marketplace/', views.admin_marketplace_view, name='admin_marketplace'),
     path('admin/marketplace/action/<str:action>/', views.admin_market_action_view, name='admin_market_action'),
@@ -73,6 +78,7 @@ urlpatterns = [
     path('farmer/products/edit/<str:product_id>/', views.farmer_edit_product_view, name='farmer_edit_product'),
     path('farmer/products/delete/<str:product_id>/', views.farmer_delete_product_view, name='farmer_delete_product'),
     path('farmer/wallet/', views.farmer_wallet_view, name='farmer_wallet'),
+    path('farmer/wallet/topup/', views.farmer_wallet_topup_view, name='farmer_wallet_topup'),
     path('farmer/my-bids/', views.farmer_bids_view, name='farmer_bids'),
     path('farmer/confirm-delivery/<str:order_id>/', views.farmer_confirm_delivery_view, name='farmer_confirm_delivery'),
     
@@ -109,4 +115,33 @@ urlpatterns = [
     
     # Worker Task update url
     path('worker/task/<str:task_id>/complete/', views.worker_mark_task_completed_view, name='worker_mark_task_completed'),
+    
+    # API endpoint for AI Chatbot
+    path('api/ai/chat/', views.ai_chat_view, name='ai_chat'),
+    
+    # Insurance Officer URLs
+    path('officer/login/', views.officer_login_view, name='officer_login'),
+    path('officer/dashboard/', views.officer_dashboard_view, name='officer_dashboard'),
+    path('officer/logout/', views.officer_logout_view, name='officer_logout'),
+    path('officer/policies/', views.officer_policies_view, name='officer_policies'),
+    path('officer/policies/add/', views.officer_add_policy_view, name='officer_add_policy'),
+    path('officer/policies/edit/<str:policy_id>/', views.officer_edit_policy_view, name='officer_edit_policy'),
+    path('officer/policies/toggle/<str:policy_id>/', views.officer_toggle_policy_view, name='officer_toggle_policy'),
+    path('officer/enrollments/', views.officer_enrollments_view, name='officer_enrollments'),
+    path('officer/premiums/', views.officer_premiums_view, name='officer_premiums'),
+    path('officer/claims/', views.officer_claims_view, name='officer_claims'),
+    path('officer/claims/<str:claim_id>/', views.officer_claim_detail_view, name='officer_claim_detail'),
+    path('officer/settlements/', views.officer_settlements_view, name='officer_settlements'),
+    path('officer/settlements/<str:claim_id>/settle/', views.officer_settle_claim_view, name='officer_settle_claim'),
+    
+    # Farmer Insurance URLs
+    path('farmer/insurance/', views.farmer_insurance_view, name='farmer_insurance'),
+    path('farmer/insurance/buy/<str:policy_id>/', views.farmer_buy_insurance_view, name='farmer_buy_insurance'),
+    path('farmer/insurance/my-policies/', views.farmer_my_policies_view, name='farmer_my_policies'),
+    path('farmer/insurance/premium/pay/<str:enrollment_id>/', views.farmer_pay_premium_view, name='farmer_pay_premium'),
+    path('farmer/insurance/renew/<str:enrollment_id>/', views.farmer_renew_policy_view, name='farmer_renew_policy'),
+    path('farmer/insurance/receipt/<str:payment_id>/', views.farmer_payment_receipt_view, name='farmer_payment_receipt'),
+    path('farmer/insurance/premium-history/', views.farmer_premium_history_view, name='farmer_premium_history'),
+    path('farmer/insurance/claim/apply/', views.farmer_apply_claim_view, name='farmer_apply_claim'),
+    path('farmer/insurance/my-claims/', views.farmer_my_claims_view, name='farmer_my_claims'),
 ]

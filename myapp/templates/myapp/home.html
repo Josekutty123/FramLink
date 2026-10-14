@@ -103,6 +103,210 @@
     </div>
 </section>
 
+<!-- AI Chatbot Section -->
+<section id="ai-assistant" class="py-5 bg-white border-top">
+    <div class="container py-4">
+        <div class="text-center mb-5">
+            <h6 class="text-success fw-bold text-uppercase">AI Agricultural Assistant</h6>
+            <h2 class="fw-bold display-6">Ask about FarmLink or anything related to agriculture</h2>
+            <div class="bg-success mx-auto rounded-pill" style="width: 60px; height: 4px;"></div>
+        </div>
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="card border border-success-subtle shadow-lg rounded-4 overflow-hidden">
+                    <div class="card-header bg-success text-white py-3 d-flex justify-content-between align-items-center border-0">
+                        <div class="fw-bold fs-5"><i class="bi bi-robot me-2"></i>FarmLink AI Assistant</div>
+                        <button class="btn btn-sm btn-light text-success fw-bold rounded-pill shadow-sm" onclick="clearChat()">
+                            <i class="bi bi-arrow-clockwise me-1"></i> New Chat
+                        </button>
+                    </div>
+                    <div class="card-body p-0" style="background-color: #fcfdfc;">
+                        <div id="chat-window" class="p-4" style="height: 400px; overflow-y: auto;">
+                            <!-- Welcome Message -->
+                            <div class="d-flex mb-4">
+                                <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center me-3 shadow-sm" style="width: 45px; height: 45px; flex-shrink: 0; font-size: 1.2rem;">
+                                    <i class="bi bi-robot"></i>
+                                </div>
+                                <div class="bg-white p-3 rounded-4 shadow-sm border border-success-subtle" style="max-width: 85%; border-top-left-radius: 0 !important;">
+                                    Hello! I'm the FarmLink AI Agricultural Assistant.<br><br>
+                                    You can ask me about FarmLink, farming, crops, fertilizers, soil, irrigation, pests, and more. How can I help you?
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Quick Suggestions -->
+                        <div class="p-3 border-top border-success-subtle bg-white" id="quick-suggestions">
+                            <span class="small text-success fw-bold text-uppercase d-block mb-2">Suggested questions:</span>
+                            <div class="d-flex flex-wrap gap-2">
+                                <button type="button" class="btn btn-sm btn-outline-success rounded-pill" onclick="sendSuggestion('What is FarmLink?')">What is FarmLink?</button>
+                                <button type="button" class="btn btn-sm btn-outline-success rounded-pill" onclick="sendSuggestion('How does FarmLink work?')">How does FarmLink work?</button>
+                                <button type="button" class="btn btn-sm btn-outline-success rounded-pill" onclick="sendSuggestion('How does bidding work?')">How does bidding work?</button>
+                                <button type="button" class="btn btn-sm btn-outline-success rounded-pill" onclick="sendSuggestion('What fertilizer is suitable for tomatoes?')">What fertilizer is suitable for tomatoes?</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-white p-3 border-top border-success-subtle">
+                        <form id="ai-chat-form" onsubmit="handleChatSubmit(event)">
+                            <div class="input-group input-group-lg shadow-sm rounded-pill border border-success-subtle p-1">
+                                <input type="text" id="chat-input" class="form-control border-0 rounded-pill ps-4" style="box-shadow: none;" placeholder="Type your message here..." required autocomplete="off">
+                                <button type="submit" id="chat-submit" class="btn btn-success rounded-pill px-4 ms-1">
+                                    <i class="bi bi-send-fill"></i>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+    const csrfToken = '{{ csrf_token }}';
+    
+    function escapeHtml(text) {
+        return text
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+    
+    function appendMessage(sender, text) {
+        const chatWindow = document.getElementById('chat-window');
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `d-flex mb-4 ${sender === 'user' ? 'justify-content-end' : ''}`;
+        
+        let iconHtml = '';
+        if (sender === 'ai') {
+            iconHtml = `
+                <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center me-3 shadow-sm" style="width: 45px; height: 45px; flex-shrink: 0; font-size: 1.2rem;">
+                    <i class="bi bi-robot"></i>
+                </div>
+            `;
+        }
+        
+        let contentHtml = '';
+        if (sender === 'user') {
+            contentHtml = `
+                <div class="bg-success text-white p-3 rounded-4 shadow-sm" style="max-width: 85%; border-top-right-radius: 0 !important;">
+                    ${escapeHtml(text).replace(/\\n/g, '<br>')}
+                </div>
+            `;
+        } else {
+            contentHtml = `
+                <div class="bg-white text-dark p-3 rounded-4 shadow-sm border border-success-subtle" style="max-width: 85%; border-top-left-radius: 0 !important;">
+                    ${escapeHtml(text).replace(/\\n/g, '<br>')}
+                </div>
+            `;
+        }
+        
+        if (sender === 'user') {
+            msgDiv.innerHTML = contentHtml;
+        } else {
+            msgDiv.innerHTML = iconHtml + contentHtml;
+        }
+        
+        chatWindow.appendChild(msgDiv);
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
+    
+    function showLoading() {
+        const chatWindow = document.getElementById('chat-window');
+        const loadingDiv = document.createElement('div');
+        loadingDiv.id = 'chat-loading';
+        loadingDiv.className = 'd-flex mb-4';
+        loadingDiv.innerHTML = `
+            <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center me-3 shadow-sm" style="width: 45px; height: 45px; flex-shrink: 0; font-size: 1.2rem;">
+                <i class="bi bi-robot"></i>
+            </div>
+            <div class="bg-white p-3 rounded-4 shadow-sm border border-success-subtle text-muted d-flex align-items-center" style="border-top-left-radius: 0 !important;">
+                <span class="spinner-grow spinner-grow-sm me-2 text-success" role="status" aria-hidden="true"></span>
+                AI is thinking...
+            </div>
+        `;
+        chatWindow.appendChild(loadingDiv);
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+        
+        document.getElementById('chat-input').disabled = true;
+        document.getElementById('chat-submit').disabled = true;
+    }
+    
+    function hideLoading() {
+        const loadingDiv = document.getElementById('chat-loading');
+        if (loadingDiv) {
+            loadingDiv.remove();
+        }
+        document.getElementById('chat-input').disabled = false;
+        document.getElementById('chat-submit').disabled = false;
+        document.getElementById('chat-input').focus();
+    }
+    
+    function clearChat() {
+        const chatWindow = document.getElementById('chat-window');
+        chatWindow.innerHTML = `
+            <div class="d-flex mb-4">
+                <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center me-3 shadow-sm" style="width: 45px; height: 45px; flex-shrink: 0; font-size: 1.2rem;">
+                    <i class="bi bi-robot"></i>
+                </div>
+                <div class="bg-white p-3 rounded-4 shadow-sm border border-success-subtle" style="max-width: 85%; border-top-left-radius: 0 !important;">
+                    Hello! I'm the FarmLink AI Agricultural Assistant.<br><br>
+                    You can ask me about FarmLink, farming, crops, fertilizers, soil, irrigation, pests, and more. How can I help you?
+                </div>
+            </div>
+        `;
+        const suggestions = document.getElementById('quick-suggestions');
+        if (suggestions) suggestions.style.display = 'block';
+    }
+    
+    function sendSuggestion(text) {
+        document.getElementById('chat-input').value = text;
+        document.getElementById('ai-chat-form').dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+    }
+    
+    async function handleChatSubmit(event) {
+        event.preventDefault();
+        
+        const inputField = document.getElementById('chat-input');
+        const message = inputField.value.trim();
+        
+        if (!message) return;
+        
+        const suggestions = document.getElementById('quick-suggestions');
+        if (suggestions) suggestions.style.display = 'none';
+        
+        appendMessage('user', message);
+        inputField.value = '';
+        
+        showLoading();
+        
+        try {
+            const response = await fetch('/api/ai/chat/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify({ message: message })
+            });
+            
+            const data = await response.json();
+            hideLoading();
+            
+            if (data.success) {
+                appendMessage('ai', data.response);
+            } else {
+                appendMessage('ai', data.error || "Sorry, I couldn't process your request right now.");
+            }
+        } catch (error) {
+            hideLoading();
+            appendMessage('ai', "Sorry, I couldn't process your request right now. Please try again.");
+            console.error("Chat Error:", error);
+        }
+    }
+</script>
+
 <!-- Contact Section -->
 <section id="contact" class="py-5 bg-white">
     <div class="container py-4">

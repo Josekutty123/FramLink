@@ -396,14 +396,18 @@ class DeliveryOrder(models.Model):
         ('ASSIGNED', 'ASSIGNED'),
         ('PICKED_UP', 'PICKED_UP'),
         ('OUT_FOR_DELIVERY', 'OUT_FOR_DELIVERY'),
-        ('AWAITING_CUSTOMER_CONFIRMATION', 'AWAITING_CUSTOMER_CONFIRMATION'),
         ('DELIVERED', 'DELIVERED'),
+        ('COMPLETED', 'COMPLETED'),
     ]
 
     order_id = models.CharField(max_length=20, unique=True, editable=False, blank=True)
     sale = models.ForeignKey(Sale, on_delete=models.CASCADE, related_name='delivery_orders')
     delivery_person = models.ForeignKey(Delivery, on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_deliveries')
     status = models.CharField(max_length=50, choices=STATUS_CHOICES, default='PENDING')
+    assigned_at = models.DateTimeField(null=True, blank=True)
+    picked_up_at = models.DateTimeField(null=True, blank=True)
+    out_for_delivery_at = models.DateTimeField(null=True, blank=True)
+    delivered_at = models.DateTimeField(null=True, blank=True)
     customer_confirmation_date = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -716,3 +720,276 @@ class SupplyPurchase(models.Model):
 
     def __str__(self):
         return f"{self.purchase_id} - {self.farmer.full_name} bought {self.quantity} {self.supply.supply_name}"
+
+# ====================================================
+# AGRICULTURAL INSURANCE MODELS
+# ====================================================
+
+class InsuranceOfficer(models.Model):
+    officer_id = models.CharField(max_length=20, unique=True, editable=False, blank=True)
+    full_name = models.CharField(max_length=100)
+    email = models.EmailField(max_length=191, unique=True)
+    password = models.CharField(max_length=255)
+    phone = models.CharField(max_length=15, blank=True, null=True)
+    is_active = models.BooleanField(default=True)
+    role = models.CharField(max_length=50, default='INSURANCE_OFFICER')
+    joining_date = models.DateField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'insurance_officer'
+
+    def save(self, *args, **kwargs):
+        if not self.officer_id:
+            max_num = 0
+            existing_ids = InsuranceOfficer.objects.values_list('officer_id', flat=True)
+            for oid in existing_ids:
+                if oid and oid.startswith('IO'):
+                    match = re.search(r'\d+', oid)
+                    if match:
+                        num = int(match.group())
+                        if num > max_num:
+                             max_num = num
+            self.officer_id = f"IO{max_num + 1}"
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.officer_id} - {self.full_name}"
+
+class InsurancePolicy(models.Model):
+    PAYMENT_FREQUENCY_CHOICES = [
+        ('YEARLY', 'Yearly'),
+        ('PER_SEASON', 'Per Season'),
+        ('MONTHLY', 'Monthly'),
+    ]
+
+    policy_id = models.CharField(max_length=20, unique=True, editable=False, blank=True)
+    name = models.CharField(max_length=150)
+    description = models.TextField()
+    eligible_crop = models.CharField(max_length=100)
+    covered_risks = models.TextField(help_text="e.g. Flood, Heavy Rainfall, Inundation")
+    max_coverage_amount = models.DecimalField(max_digits=12, decimal_places=2)
+    premium_amount = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('2000.00'))
+    coverage_duration = models.CharField(max_length=50, default='1 Year', help_text="e.g. 1 Year")
+    payment_frequency = models.CharField(max_length=20, choices=PAYMENT_FREQUENCY_CHOICES, default='YEARLY')
+    coverage_start_date = models.DateField()
+    coverage_end_date = models.DateField()
+    claim_reporting_deadline_days = models.PositiveIntegerField(default=30)
+    terms_and_conditions = models.TextField()
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'insurance_policy'
+
+    def save(self, *args, **kwargs):
+        if not self.policy_id:
+            max_num = 0
+            existing_ids = InsurancePolicy.objects.values_list('policy_id', flat=True)
+            for pid in existing_ids:
+                if pid and pid.startswith('IP'):
+                    match = re.search(r'\d+', pid)
+                    if match:
+                        num = int(match.group())
+                        if num > max_num:
+                             max_num = num
+            self.policy_id = f"IP{max_num + 1}"
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.policy_id} - {self.name}"
+
+class FarmerPolicyEnrollment(models.Model):
+    STATUS_CHOICES = [
+        ('PENDING_PAYMENT', 'PENDING_PAYMENT'),
+        ('ACTIVE', 'ACTIVE'),
+        ('EXPIRED', 'EXPIRED'),
+        ('INACTIVE', 'INACTIVE'),
+    ]
+
+    enrollment_id = models.CharField(max_length=20, unique=True, editable=False, blank=True)
+    farmer = models.ForeignKey(Farmer, on_delete=models.CASCADE, related_name='insurance_enrollments')
+    policy = models.ForeignKey(InsurancePolicy, on_delete=models.RESTRICT, related_name='enrollments')
+    crop_name = models.CharField(max_length=100)
+    farm_area = models.DecimalField(max_digits=8, decimal_places=2) # in acres
+    farm_location = models.CharField(max_length=255)
+    coverage_period_start = models.DateField()
+    coverage_period_end = models.DateField()
+    next_renewal_date = models.DateField(null=True, blank=True)
+    last_payment_date = models.DateTimeField(null=True, blank=True)
+    premium_amount_due = models.DecimalField(max_digits=10, decimal_places=2)
+    payment_frequency = models.CharField(max_length=20, default='YEARLY')
+    accepted_terms = models.BooleanField(default=False)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING_PAYMENT')
+    enrolled_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'farmer_policy_enrollment'
+
+    @property
+    def is_expired(self):
+        if not self.coverage_period_end:
+            return False
+        return timezone.now().date() > self.coverage_period_end
+
+    @property
+    def is_approaching_expiry(self):
+        if not self.coverage_period_end or self.status not in ['ACTIVE', 'EXPIRED']:
+            return False
+        today = timezone.now().date()
+        return today >= (self.coverage_period_end - timezone.timedelta(days=30))
+
+    @property
+    def can_renew(self):
+        if self.status not in ['ACTIVE', 'EXPIRED']:
+            return False
+        today = timezone.now().date()
+        return today >= (self.coverage_period_end - timezone.timedelta(days=30))
+
+    def save(self, *args, **kwargs):
+        if not self.enrollment_id:
+            max_num = 0
+            existing_ids = FarmerPolicyEnrollment.objects.values_list('enrollment_id', flat=True)
+            for eid in existing_ids:
+                if eid and eid.startswith('ENR'):
+                    match = re.search(r'\d+', eid)
+                    if match:
+                        num = int(match.group())
+                        if num > max_num:
+                             max_num = num
+            self.enrollment_id = f"ENR{max_num + 1}"
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.enrollment_id} - {self.farmer.full_name} ({self.policy.name})"
+
+class PremiumPayment(models.Model):
+    STATUS_CHOICES = [
+        ('PENDING', 'PENDING'),
+        ('SUCCESS', 'SUCCESS'),
+        ('FAILED', 'FAILED'),
+    ]
+
+    payment_id = models.CharField(max_length=20, unique=True, editable=False, blank=True)
+    enrollment = models.ForeignKey(FarmerPolicyEnrollment, on_delete=models.CASCADE, related_name='payments')
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    payment_date = models.DateTimeField(auto_now_add=True)
+    payment_method = models.CharField(max_length=50, default='WALLET')
+    transaction_reference = models.CharField(max_length=100, blank=True, null=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='SUCCESS')
+    is_simulated = models.BooleanField(default=True)
+    installment_number = models.PositiveIntegerField(default=1)
+    coverage_start_date = models.DateField(null=True, blank=True)
+    coverage_end_date = models.DateField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'premium_payment'
+
+    def save(self, *args, **kwargs):
+        if not self.payment_id:
+            max_num = 0
+            existing_ids = PremiumPayment.objects.values_list('payment_id', flat=True)
+            for pid in existing_ids:
+                if pid and pid.startswith('PAY'):
+                    match = re.search(r'\d+', pid)
+                    if match:
+                        num = int(match.group())
+                        if num > max_num:
+                             max_num = num
+            self.payment_id = f"PAY{max_num + 1}"
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.payment_id} - ₹{self.amount} for {self.enrollment.enrollment_id}"
+
+class InsuranceClaim(models.Model):
+    STATUS_CHOICES = [
+        ('SUBMITTED', 'SUBMITTED'),
+        ('UNDER_REVIEW', 'UNDER_REVIEW'),
+        ('ADDITIONAL_INFORMATION_REQUIRED', 'ADDITIONAL_INFORMATION_REQUIRED'),
+        ('APPROVED', 'APPROVED'),
+        ('REJECTED', 'REJECTED'),
+        ('SETTLEMENT_PENDING', 'SETTLEMENT_PENDING'),
+        ('PAID', 'PAID'),
+    ]
+
+    claim_id = models.CharField(max_length=20, unique=True, editable=False, blank=True)
+    enrollment = models.ForeignKey(FarmerPolicyEnrollment, on_delete=models.CASCADE, related_name='claims')
+    incident_type = models.CharField(max_length=100)
+    incident_date = models.DateField()
+    incident_location = models.CharField(max_length=255)
+    damage_description = models.TextField()
+    affected_farm_area = models.DecimalField(max_digits=8, decimal_places=2)
+    estimated_financial_loss = models.DecimalField(max_digits=12, decimal_places=2)
+    evidence_file = models.FileField(upload_to='claims/', blank=True, null=True)
+    status = models.CharField(max_length=50, choices=STATUS_CHOICES, default='SUBMITTED')
+    submission_date = models.DateTimeField(auto_now_add=True)
+    
+    officer_notes = models.TextField(blank=True, null=True)
+    rejection_reason = models.TextField(blank=True, null=True)
+    approved_amount = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    reviewed_by = models.ForeignKey(InsuranceOfficer, on_delete=models.SET_NULL, null=True, blank=True)
+    decision_date = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'insurance_claim'
+
+    def save(self, *args, **kwargs):
+        if not self.claim_id:
+            max_num = 0
+            existing_ids = InsuranceClaim.objects.values_list('claim_id', flat=True)
+            for cid in existing_ids:
+                if cid and cid.startswith('CLM'):
+                    match = re.search(r'\d+', cid)
+                    if match:
+                        num = int(match.group())
+                        if num > max_num:
+                             max_num = num
+            self.claim_id = f"CLM{max_num + 1}"
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.claim_id} - {self.status}"
+
+class ClaimSettlement(models.Model):
+    settlement_id = models.CharField(max_length=20, unique=True, editable=False, blank=True)
+    claim = models.OneToOneField(InsuranceClaim, on_delete=models.CASCADE, related_name='settlement')
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    settlement_date = models.DateTimeField(auto_now_add=True)
+    payment_method = models.CharField(max_length=50)
+    transaction_reference = models.CharField(max_length=100)
+    is_simulated = models.BooleanField(default=False)
+
+    class Meta:
+        db_table = 'claim_settlement'
+
+    def save(self, *args, **kwargs):
+        if not self.settlement_id:
+            max_num = 0
+            existing_ids = ClaimSettlement.objects.values_list('settlement_id', flat=True)
+            for sid in existing_ids:
+                if sid and sid.startswith('STL'):
+                    match = re.search(r'\d+', sid)
+                    if match:
+                        num = int(match.group())
+                        if num > max_num:
+                             max_num = num
+            self.settlement_id = f"STL{max_num + 1}"
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.settlement_id} - ₹{self.amount} for Claim {self.claim.claim_id}"
+
+class PolicyCoveragePeriod(models.Model):
+    enrollment = models.ForeignKey(FarmerPolicyEnrollment, on_delete=models.CASCADE, related_name='coverage_periods')
+    payment = models.ForeignKey(PremiumPayment, on_delete=models.SET_NULL, null=True, blank=True, related_name='coverage_periods')
+    coverage_start_date = models.DateField()
+    coverage_end_date = models.DateField()
+    is_renewal = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'policy_coverage_period'
+        ordering = ['-coverage_start_date']
+
+    def __str__(self):
+        return f"{self.enrollment.enrollment_id}: {self.coverage_start_date} to {self.coverage_end_date} (Renewal: {self.is_renewal})"

@@ -1,0 +1,70 @@
+{% extends 'myapp/erp_base.html' %}
+{% block title %}Pay Premium{% endblock %}
+{% block erp_content %}
+<div class="container-fluid px-0">
+    <h3 class="fw-bold mb-4">Pay Premium</h3>
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-sm border-0 p-4 rounded-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold mb-0 text-success">{{ enrollment.policy.name }}</h5>
+                    <span class="badge bg-primary-subtle text-primary border">Annual Coverage</span>
+                </div>
+                <div class="p-3 bg-light rounded-3 mb-4">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Enrolled Crop:</span>
+                        <span class="fw-semibold">{{ enrollment.crop_name }} ({{ enrollment.farm_area }} acres)</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Maximum Coverage Limit:</span>
+                        <span class="fw-bold text-success">₹{{ enrollment.policy.max_coverage_amount }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Coverage Period:</span>
+                        <span class="fw-semibold">{{ enrollment.coverage_period_start|date:"d M Y" }} to {{ enrollment.coverage_period_end|date:"d M Y" }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Payment Type:</span>
+                        <span class="fw-semibold">1-Year Annual Premium (Single Payment)</span>
+                    </div>
+                    <hr class="my-2">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="fw-bold">Total Annual Premium Due:</span>
+                        <span class="fs-4 fw-bold text-primary">₹{{ amount_to_pay }}</span>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mb-3 px-2">
+                    <span class="text-muted">FarmLink Wallet Balance:</span>
+                    <span class="fw-bold fs-5 {% if wallet.balance < amount_to_pay %}text-danger{% else %}text-success{% endif %}">
+                        ₹{{ wallet.balance }}
+                    </span>
+                </div>
+                
+                <form method="post">
+                    {% csrf_token %}
+                    {% if wallet.balance >= amount_to_pay %}
+                        <div class="alert alert-secondary py-2 small mb-3 text-center">
+                            <i class="bi bi-shield-check me-1"></i> Payment Method: <strong>FarmLink Wallet</strong> <span class="badge bg-secondary ms-1">Simulated</span>
+                        </div>
+                        <button type="submit" class="btn btn-success w-100 rounded-pill py-2 fw-semibold">
+                            Pay ₹{{ amount_to_pay }} Annual Premium (Simulated)
+                        </button>
+                    {% else %}
+                        <div class="alert alert-danger py-2 small mb-3 text-center">
+                            <i class="bi bi-exclamation-triangle-fill me-1"></i> Insufficient balance to pay the annual premium.
+                        </div>
+                        <a href="{% url 'farmer_wallet_topup' %}" class="btn btn-outline-primary w-100 rounded-pill mb-2">
+                            Top Up Wallet (Need ₹{{ amount_to_pay }})
+                        </a>
+                        <button type="button" class="btn btn-secondary w-100 rounded-pill" disabled>Pay Premium</button>
+                    {% endif %}
+                </form>
+                <div class="text-center mt-3">
+                    <a href="{% url 'farmer_my_policies' %}" class="text-muted small text-decoration-none">Cancel and return to My Policies</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

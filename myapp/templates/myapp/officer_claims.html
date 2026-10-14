@@ -1,0 +1,35 @@
+{% extends 'myapp/erp_base.html' %}
+{% block title %}Insurance Claims{% endblock %}
+{% block erp_content %}
+<div class="container-fluid px-0">
+    <h3 class="fw-bold mb-4">Insurance Claims</h3>
+    <div class="card shadow-sm border-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Claim ID</th><th>Farmer</th><th>Policy</th><th>Incident</th><th>Loss Est.</th><th>Status</th><th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in claims %}
+                    <tr>
+                        <td>{{ c.claim_id }}</td>
+                        <td>{{ c.enrollment.farmer.full_name }}</td>
+                        <td>{{ c.enrollment.policy.name }}</td>
+                        <td>{{ c.incident_type }} ({{ c.incident_date }})</td>
+                        <td>₹{{ c.estimated_financial_loss }}</td>
+                        <td>
+                            <span class="badge {% if c.status == 'SUBMITTED' %}bg-warning{% elif c.status == 'APPROVED' %}bg-success{% elif c.status == 'REJECTED' %}bg-danger{% else %}bg-info{% endif %}">{{ c.status }}</span>
+                        </td>
+                        <td>
+                            <a href="{% url 'officer_claim_detail' c.claim_id %}" class="btn btn-sm btn-outline-primary">Review</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,98 @@
+{% extends 'myapp/erp_base.html' %}
+{% block title %}My Active Policies{% endblock %}
+{% block erp_content %}
+<div class="container-fluid px-0">
+    <h3 class="fw-bold mb-4">My Insurance Policies</h3>
+    <div class="row g-4">
+        {% for enc in enrollments %}
+        <div class="col-md-6 col-lg-6">
+            <div class="card shadow-sm border-0 h-100 rounded-4">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="fw-bold mb-0 text-success">{{ enc.policy.name }}</h5>
+                        <span class="badge {% if enc.status == 'ACTIVE' %}bg-success{% elif enc.status == 'PENDING_PAYMENT' %}bg-warning text-dark{% elif enc.status == 'EXPIRED' %}bg-danger{% else %}bg-secondary{% endif %}">
+                            {{ enc.get_status_display }}
+                        </span>
+                    </div>
+                    <p class="mb-1 text-muted small"><strong>Enrollment ID:</strong> {{ enc.enrollment_id }}</p>
+                    <p class="mb-1"><strong>Insured Crop:</strong> {{ enc.crop_name }} ({{ enc.farm_area }} acres)</p>
+                    <p class="mb-1"><strong>Farm Location:</strong> {{ enc.farm_location }}</p>
+                    
+                    <div class="p-3 bg-light rounded-3 my-3">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="small text-muted">Max Coverage Limit:</span>
+                            <span class="fw-bold text-success">₹{{ enc.policy.max_coverage_amount }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="small text-muted">Annual Premium:</span>
+                            <span class="fw-bold text-primary">₹{{ enc.premium_amount_due }} (Annual)</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="small text-muted">Coverage Start Date:</span>
+                            <span class="fw-semibold">{{ enc.coverage_period_start|date:"d M Y" }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="small text-muted">Coverage Expiry Date:</span>
+                            <span class="fw-bold {% if enc.is_expired %}text-danger{% else %}text-dark{% endif %}">
+                                {{ enc.coverage_period_end|date:"d M Y" }}
+                            </span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span class="small text-muted">Next Renewal Date:</span>
+                            <span class="fw-semibold text-info-emphasis">
+                                {% if enc.next_renewal_date %}{{ enc.next_renewal_date|date:"d M Y" }}{% else %}{{ enc.coverage_period_end|date:"d M Y" }}{% endif %}
+                            </span>
+                        </div>
+                    </div>
+
+                    {% if enc.status == 'PENDING_PAYMENT' %}
+                        <div class="alert alert-warning py-2 small mb-3">
+                            <i class="bi bi-clock-history me-1"></i> Policy is inactive until the annual premium of ₹{{ enc.premium_amount_due }} is paid in full.
+                        </div>
+                        <div class="text-center">
+                            <a href="{% url 'farmer_pay_premium' enc.enrollment_id %}" class="btn btn-warning w-100 rounded-pill fw-semibold">
+                                Pay Annual Premium Now (₹{{ enc.premium_amount_due }})
+                            </a>
+                        </div>
+                    {% elif enc.status == 'ACTIVE' or enc.status == 'EXPIRED' %}
+                        {% if enc.is_expired %}
+                            <div class="alert alert-danger py-2 small mb-3">
+                                <i class="bi bi-exclamation-octagon-fill me-1"></i> <strong>Coverage Expired:</strong> Policy expired on {{ enc.coverage_period_end|date:"d M Y" }}. Renew now to restart coverage without gap protection.
+                            </div>
+                        {% elif enc.is_approaching_expiry %}
+                            <div class="alert alert-warning py-2 small mb-3">
+                                <i class="bi bi-hourglass-split me-1"></i> <strong>Expiring Soon:</strong> Coverage ends on {{ enc.coverage_period_end|date:"d M Y" }}. Renew to ensure uninterrupted protection.
+                            </div>
+                        {% endif %}
+
+                        <div class="d-flex gap-2 flex-wrap mt-3">
+                            {% if enc.can_renew %}
+                                <a href="{% url 'farmer_renew_policy' enc.enrollment_id %}" class="btn btn-primary flex-fill rounded-pill fw-semibold">
+                                    <i class="bi bi-arrow-repeat"></i> Renew Insurance (₹{{ enc.policy.premium_amount }})
+                                </a>
+                            {% endif %}
+                            
+                            {% with latest_payment=enc.payments.last %}
+                                {% if latest_payment %}
+                                    <a href="{% url 'farmer_payment_receipt' latest_payment.payment_id %}" class="btn btn-outline-secondary rounded-pill flex-fill">
+                                        <i class="bi bi-receipt"></i> View Receipt
+                                    </a>
+                                {% endif %}
+                            {% endwith %}
+
+                            {% if enc.status == 'ACTIVE' and not enc.is_expired %}
+                                <a href="{% url 'farmer_apply_claim' %}" class="btn btn-outline-success rounded-pill flex-fill">
+                                    <i class="bi bi-plus-circle"></i> File Claim
+                                </a>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12"><div class="alert alert-info">You have not enrolled in any policies yet.</div></div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,40 @@
+{% extends 'myapp/erp_base.html' %}
+{% block title %}Premium Payments{% endblock %}
+{% block erp_content %}
+<div class="container-fluid px-0">
+    <h3 class="fw-bold mb-4">Premium Payments</h3>
+    <div class="card shadow-sm border-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Payment ID</th><th>Transaction Ref</th><th>Farmer</th><th>Policy</th><th>Amount</th><th>Coverage Period</th><th>Date</th><th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in payments %}
+                    <tr>
+                        <td class="fw-bold">{{ p.payment_id }}</td>
+                        <td><small class="text-monospace">{{ p.transaction_reference }}</small></td>
+                        <td>{{ p.enrollment.farmer.full_name }}</td>
+                        <td>{{ p.enrollment.policy.name }}</td>
+                        <td class="fw-bold text-primary">₹{{ p.amount }}</td>
+                        <td class="small">
+                            {% if p.coverage_start_date and p.coverage_end_date %}
+                                {{ p.coverage_start_date|date:"d M Y" }} to {{ p.coverage_end_date|date:"d M Y" }}
+                            {% else %}
+                                {{ p.enrollment.coverage_period_start|date:"d M Y" }} to {{ p.enrollment.coverage_period_end|date:"d M Y" }}
+                            {% endif %}
+                        </td>
+                        <td class="small">{{ p.payment_date|date:"d M Y, h:i A" }}</td>
+                        <td><span class="badge bg-success">{{ p.status }}</span> <small class="text-muted d-block">Simulated</small></td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="8" class="text-center py-4">No premium payments found.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

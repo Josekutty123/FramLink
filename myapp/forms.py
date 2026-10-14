@@ -650,3 +650,139 @@ class AdminSupplyForm(forms.ModelForm):
                 
         return image
 
+# ====================================================
+# AGRICULTURAL INSURANCE FORMS
+# ====================================================
+from decimal import Decimal
+from django.utils import timezone
+from .models import InsurancePolicy, FarmerPolicyEnrollment, InsuranceClaim, InsuranceOfficer
+
+class OfficerLoginForm(forms.Form):
+    email = forms.EmailField(
+        widget=forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'Enter your email'}),
+        label='Email Address'
+    )
+    password = forms.CharField(
+        widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Enter your password'}),
+        label='Password'
+    )
+
+class InsurancePolicyForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not self.instance.pk:
+            self.fields['premium_amount'].initial = Decimal('2000.00')
+            self.fields['coverage_duration'].initial = '1 Year'
+            self.fields['payment_frequency'].initial = 'YEARLY'
+            self.fields['claim_reporting_deadline_days'].initial = 30
+
+    class Meta:
+        model = InsurancePolicy
+        fields = ['name', 'description', 'eligible_crop', 'covered_risks', 'max_coverage_amount', 
+                  'premium_amount', 'coverage_duration', 'payment_frequency', 'coverage_start_date', 'coverage_end_date',
+                  'claim_reporting_deadline_days', 'terms_and_conditions', 'is_active']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. Tomato Crop Protection Policy'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'eligible_crop': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. Tomato'}),
+            'covered_risks': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'e.g. Flood, Heavy Rainfall, Inundation'}),
+            'max_coverage_amount': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': 'e.g. 50000.00'}),
+            'premium_amount': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': '2000.00'}),
+            'coverage_duration': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. 1 Year'}),
+            'payment_frequency': forms.Select(attrs={'class': 'form-select'}),
+            'coverage_start_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'coverage_end_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'claim_reporting_deadline_days': forms.NumberInput(attrs={'class': 'form-control', 'min': '1'}),
+            'terms_and_conditions': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+
+    def clean(self):
+        cleaned_data = super().clean()
+        start = cleaned_data.get('coverage_start_date')
+        end = cleaned_data.get('coverage_end_date')
+        max_cov = cleaned_data.get('max_coverage_amount')
+        prem = cleaned_data.get('premium_amount')
+
+        if start and end and end <= start:
+            self.add_error('coverage_end_date', "Coverage end date must be after coverage start date.")
+        if max_cov is not None and max_cov <= 0:
+            self.add_error('max_coverage_amount', "Maximum coverage amount must be greater than zero.")
+        if prem is not None and prem <= 0:
+            self.add_error('premium_amount', "Annual premium amount must be greater than zero.")
+        return cleaned_data
+
+class FarmerPolicyEnrollmentForm(forms.ModelForm):
+    class Meta:
+        model = FarmerPolicyEnrollment
+        fields = ['crop_name', 'farm_area', 'farm_location']
+        widgets = {
+            'crop_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter crop name'}),
+            'farm_area': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': 'Farm area in acres'}),
+            'farm_location': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Farm location/address'}),
+        }
+
+    def clean_farm_area(self):
+        farm_area = self.cleaned_data.get('farm_area')
+        if farm_area is not None and farm_area <= 0:
+            raise forms.ValidationError("Farm area must be greater than zero.")
+        return farm_area
+
+class InsuranceClaimForm(forms.ModelForm):
+    class Meta:
+        model = InsuranceClaim
+        fields = ['incident_type', 'incident_date', 'incident_location', 'damage_description', 
+                  'affected_farm_area', 'estimated_financial_loss', 'evidence_file']
+        widgets = {
+            'incident_type': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. Flood / Heavy Rainfall'}),
+            'incident_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'incident_location': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Incident location'}),
+            'damage_description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Detailed description of crop damage'}),
+            'affected_farm_area': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': 'Acres affected'}),
+            'estimated_financial_loss': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': '₹ Estimated loss'}),
+            'evidence_file': forms.FileInput(attrs={'class': 'form-control'}),
+        }
+
+    def clean_incident_date(self):
+        incident_date = self.cleaned_data.get('incident_date')
+        if incident_date and incident_date > timezone.now().date():
+            raise forms.ValidationError("Incident date cannot be in the future.")
+        return incident_date
+
+    def clean_estimated_financial_loss(self):
+        loss = self.cleaned_data.get('estimated_financial_loss')
+        if loss is not None and loss <= 0:
+            raise forms.ValidationError("Estimated financial loss must be greater than zero.")
+        return loss
+
+    def clean_affected_farm_area(self):
+        area = self.cleaned_data.get('affected_farm_area')
+        if area is not None and area <= 0:
+            raise forms.ValidationError("Affected farm area must be greater than zero.")
+        return area
+
+class ClaimReviewForm(forms.ModelForm):
+    class Meta:
+        model = InsuranceClaim
+        fields = ['status', 'officer_notes', 'rejection_reason', 'approved_amount']
+        widgets = {
+            'status': forms.Select(attrs={'class': 'form-select'}),
+            'officer_notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'rejection_reason': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'approved_amount': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+        }
+
+class InsuranceOfficerForm(forms.ModelForm):
+    password = forms.CharField(
+        widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Enter temporary password'}),
+        label='Password'
+    )
+    class Meta:
+        model = InsuranceOfficer
+        fields = ['full_name', 'email', 'phone', 'is_active']
+        widgets = {
+            'full_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Officer Name'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'Email Address'}),
+            'phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Phone Number'}),
+            'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'})
+        }

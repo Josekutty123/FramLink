@@ -135,6 +135,8 @@
                                         <span class="badge bg-info">OUT FOR DELIVERY</span>
                                     {% elif order.status == 'DELIVERED' %}
                                         <span class="badge bg-success">DELIVERED</span>
+                                    {% elif order.status == 'COMPLETED' %}
+                                        <span class="badge bg-success border border-success text-white shadow-sm">COMPLETED</span>
                                     {% else %}
                                         <span class="badge bg-secondary">{{ order.status }}</span>
                                     {% endif %}

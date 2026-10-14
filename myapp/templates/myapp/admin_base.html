@@ -88,6 +88,20 @@
                 </a>
             </li>
 
+            <li class="sidebar-item mt-3 mb-1 px-3 text-uppercase text-light opacity-75 small fw-bold">Insurance</li>
+            <li class="sidebar-item">
+                <a href="{% url 'admin_officers' %}" class="sidebar-link {% if request.resolver_match.url_name == 'admin_officers' or request.resolver_match.url_name == 'admin_add_officer' %}active{% endif %}">
+                    <i class="bi bi-shield-lock me-2"></i>
+                    <span>Manage Officers</span>
+                </a>
+            </li>
+            <li class="sidebar-item">
+                <a href="{% url 'admin_insurance_dashboard' %}" class="sidebar-link {% if request.resolver_match.url_name == 'admin_insurance_dashboard' %}active{% endif %}">
+                    <i class="bi bi-shield-check me-2"></i>
+                    <span>Insurance Dashboard</span>
+                </a>
+            </li>
+
             <li class="sidebar-item mt-4">
                 <a href="{% url 'admin_logout' %}" class="sidebar-link text-danger">
                     <i class="bi bi-box-arrow-right"></i>

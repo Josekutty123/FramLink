@@ -1,0 +1,107 @@
+{% extends 'myapp/erp_base.html' %}
+{% block title %}Insurance Payment Receipt - {{ payment.payment_id }}{% endblock %}
+{% block erp_content %}
+<div class="container-fluid px-0">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="fw-bold mb-0"><i class="bi bi-receipt text-success me-2"></i>Payment Receipt & Policy Certificate</h3>
+        <div>
+            <button onclick="window.print()" class="btn btn-outline-secondary btn-sm me-2">
+                <i class="bi bi-printer"></i> Print Receipt
+            </button>
+            <a href="{% url 'farmer_my_policies' %}" class="btn btn-primary btn-sm">
+                <i class="bi bi-arrow-left"></i> My Policies
+            </a>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm border-0 p-5 rounded-4 bg-white" id="printableReceipt">
+                <div class="border-bottom pb-4 mb-4 d-flex justify-content-between align-items-center">
+                    <div>
+                        <h4 class="fw-bold text-success mb-1"><i class="bi bi-shield-check"></i> FarmLink Agricultural Insurance</h4>
+                        <p class="text-muted small mb-0">Official Annual Premium Payment Confirmation</p>
+                    </div>
+                    <div class="text-end">
+                        <span class="badge bg-success-subtle text-success border border-success px-3 py-2 fs-6">
+                            <i class="bi bi-check-circle-fill me-1"></i> PAID & ACTIVE
+                        </span>
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-sm-6">
+                        <p class="text-muted small mb-1">Receipt / Payment ID</p>
+                        <h6 class="fw-bold">{{ payment.payment_id }}</h6>
+                    </div>
+                    <div class="col-sm-6">
+                        <p class="text-muted small mb-1">Transaction Reference</p>
+                        <h6 class="fw-bold text-monospace">{{ payment.transaction_reference }}</h6>
+                    </div>
+                    <div class="col-sm-6">
+                        <p class="text-muted small mb-1">Payment Date & Time</p>
+                        <h6 class="fw-bold">{{ payment.payment_date|date:"d M Y, h:i A" }}</h6>
+                    </div>
+                    <div class="col-sm-6">
+                        <p class="text-muted small mb-1">Payment Method</p>
+                        <h6 class="fw-bold">{{ payment.payment_method }} <span class="badge bg-secondary ms-1">Simulated</span></h6>
+                    </div>
+                </div>
+
+                <div class="table-responsive mb-4">
+                    <table class="table table-bordered mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Policy & Coverage Details</th>
+                                <th class="text-end">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <strong>{{ policy.name }}</strong>
+                                    <div class="small text-muted mt-1">
+                                        Insured Crop: {{ enrollment.crop_name }} | Farm Area: {{ enrollment.farm_area }} Acres | Location: {{ enrollment.farm_location }}
+                                    </div>
+                                    <div class="small text-muted">
+                                        Covered Risks: {{ policy.covered_risks }}
+                                    </div>
+                                    <div class="small text-success mt-1">
+                                        <strong>Max Coverage Amount:</strong> ₹{{ policy.max_coverage_amount }}
+                                    </div>
+                                    <div class="small text-primary mt-1">
+                                        <strong>Coverage Period:</strong> 
+                                        {% if payment.coverage_start_date and payment.coverage_end_date %}
+                                            {{ payment.coverage_start_date|date:"d M Y" }} to {{ payment.coverage_end_date|date:"d M Y" }}
+                                        {% else %}
+                                            {{ enrollment.coverage_period_start|date:"d M Y" }} to {{ enrollment.coverage_period_end|date:"d M Y" }}
+                                        {% endif %}
+                                    </div>
+                                    <div class="small text-info-emphasis mt-1">
+                                        <strong>Next Annual Renewal:</strong> 
+                                        {% if enrollment.next_renewal_date %}{{ enrollment.next_renewal_date|date:"d M Y" }}{% else %}{{ enrollment.coverage_period_end|date:"d M Y" }}{% endif %}
+                                    </div>
+                                </td>
+                                <td class="text-end align-middle fs-5 fw-bold text-success">
+                                    ₹{{ payment.amount }}
+                                </td>
+                            </tr>
+                        </tbody>
+                        <tfoot class="table-light">
+                            <tr>
+                                <th class="text-end">Total Annual Premium Paid:</th>
+                                <th class="text-end fs-5 text-primary">₹{{ payment.amount }}</th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+
+                <div class="p-3 bg-light rounded-3 small text-muted mb-0">
+                    <i class="bi bi-info-circle me-1"></i>
+                    <strong>Important Note:</strong> This policy is active for the configured coverage duration. Claims must be submitted within {{ policy.claim_reporting_deadline_days }} days of any covered loss incident. Maximum coverage is the eligible compensation limit subject to damage assessment.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

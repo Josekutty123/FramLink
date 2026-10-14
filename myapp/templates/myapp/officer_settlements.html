@@ -1,0 +1,61 @@
+{% extends 'myapp/erp_base.html' %}
+{% block title %}Claim Settlements{% endblock %}
+{% block erp_content %}
+<div class="container-fluid px-0">
+    <h3 class="fw-bold mb-4">Pending Settlements</h3>
+    <div class="card shadow-sm border-0 mb-5">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Claim ID</th><th>Farmer</th><th>Approved Amount</th><th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in pending_claims %}
+                    <tr>
+                        <td>{{ c.claim_id }}</td>
+                        <td>{{ c.enrollment.farmer.full_name }}</td>
+                        <td>₹{{ c.approved_amount }}</td>
+                        <td>
+                            <form method="post" action="{% url 'officer_settle_claim' c.claim_id %}">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-success">Settle Claim</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4" class="text-center py-3">No pending settlements.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <h3 class="fw-bold mb-4">Settlement History</h3>
+    <div class="card shadow-sm border-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Settlement ID</th><th>Claim ID</th><th>Amount</th><th>Date</th><th>Method</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in settlements %}
+                    <tr>
+                        <td>{{ s.settlement_id }}</td>
+                        <td>{{ s.claim.claim_id }}</td>
+                        <td>₹{{ s.amount }}</td>
+                        <td>{{ s.settlement_date }}</td>
+                        <td>{{ s.payment_method }} {% if s.is_simulated %}(Simulated){% endif %}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="5" class="text-center py-3">No settlements found.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

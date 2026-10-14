@@ -1,0 +1,18 @@
+{% extends 'myapp/admin_base.html' %}
+{% block title %}Add Insurance Officer{% endblock %}
+{% block admin_content %}
+<div class="container-fluid p-4">
+    <h3 class="fw-bold mb-4">Add New Insurance Officer</h3>
+    
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-4">
+            <form method="post">
+                {% csrf_token %}
+                {{ form.as_p }}
+                <button type="submit" class="btn btn-primary mt-3 px-4">Create Officer</button>
+                <a href="{% url 'admin_officers' %}" class="btn btn-secondary mt-3">Cancel</a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

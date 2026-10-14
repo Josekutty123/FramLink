@@ -125,15 +125,15 @@
                                         
                                         {% if order.status == 'ASSIGNED' %}
                                             <input type="hidden" name="status" value="PICKED_UP">
-                                            <button type="submit" class="btn btn-primary px-4 fw-bold shadow-sm">Mark as Picked Up</button>
+                                            <button type="submit" class="btn btn-primary px-4 fw-bold shadow-sm">Pick Up Delivery</button>
                                         
                                         {% elif order.status == 'PICKED_UP' %}
                                             <input type="hidden" name="status" value="OUT_FOR_DELIVERY">
                                             <button type="submit" class="btn btn-warning px-4 fw-bold shadow-sm">Out for Delivery</button>
                                             
                                         {% elif order.status == 'OUT_FOR_DELIVERY' %}
-                                            <input type="hidden" name="status" value="AWAITING_CUSTOMER_CONFIRMATION">
-                                            <button type="submit" class="btn btn-success px-4 fw-bold shadow-sm">Delivered to Customer</button>
+                                            <input type="hidden" name="status" value="DELIVERED">
+                                            <button type="submit" class="btn btn-success px-4 fw-bold shadow-sm">Mark Delivered</button>
                                         {% endif %}
                                     </form>
                                 </div>

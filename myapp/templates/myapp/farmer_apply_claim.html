@@ -1,0 +1,41 @@
+{% extends 'myapp/erp_base.html' %}
+{% block title %}Apply for Claim{% endblock %}
+{% block erp_content %}
+<div class="container-fluid px-0">
+    <h3 class="fw-bold mb-4">Apply for Crop-Loss Claim</h3>
+    
+    <div class="alert alert-info py-3 mb-4 rounded-3">
+        <h6 class="fw-bold mb-1"><i class="bi bi-shield-exclamation me-1"></i> Claim Eligibility Guidelines</h6>
+        <ul class="mb-0 small ps-3">
+            <li>The incident date must fall within your active insurance coverage period.</li>
+            <li>Loss must be caused by a risk covered under the policy terms (e.g. Flood, Heavy Rainfall, Inundation).</li>
+            <li>Claims must comply with the policy's reporting deadline from the date of the incident.</li>
+            <li>The maximum coverage amount represents the maximum eligible compensation limit, subject to officer verification of loss.</li>
+        </ul>
+    </div>
+
+    <div class="card shadow-sm border-0 p-4 rounded-4">
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Select Active Insurance Policy <span class="text-danger">*</span></label>
+                <select name="enrollment_id" class="form-select" required>
+                    <option value="">-- Choose Enrolled Policy --</option>
+                    {% for e in enrollments %}
+                        <option value="{{ e.enrollment_id }}">
+                            {{ e.policy.name }} — Crop: {{ e.crop_name }} (Coverage: {{ e.coverage_period_start|date:"d M Y" }} to {{ e.coverage_period_end|date:"d M Y" }} | Max Limit: ₹{{ e.policy.max_coverage_amount }})
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            {{ form.as_p }}
+            <button type="submit" class="btn btn-success mt-3 rounded-pill px-4 py-2 fw-semibold">
+                Submit Claim for Officer Review
+            </button>
+            <a href="{% url 'farmer_my_claims' %}" class="btn btn-secondary mt-3 rounded-pill px-4 py-2 ms-2">
+                Cancel
+            </a>
+        </form>
+    </div>
+</div>
+{% endblock %}

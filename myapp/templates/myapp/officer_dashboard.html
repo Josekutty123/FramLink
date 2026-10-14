@@ -1,0 +1,20 @@
+{% extends 'myapp/erp_base.html' %}
+{% block title %}Officer Dashboard{% endblock %}
+{% block erp_content %}
+<div class="container-fluid px-0">
+    <div class="glass-card p-4 mb-4 text-white" style="background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);">
+        <h2 class="fw-bold mb-1">Insurance Officer Dashboard</h2>
+        <p class="mb-0 text-white-50">Welcome, {{ officer.full_name }}!</p>
+    </div>
+    <div class="row g-4">
+        <div class="col-md-3"><div class="card shadow-sm p-4 text-center"><h5>Total Policies</h5><h2 class="text-primary">{{ total_policies }}</h2></div></div>
+        <div class="col-md-3"><div class="card shadow-sm p-4 text-center"><h5>Active Policies</h5><h2 class="text-success">{{ active_policies }}</h2></div></div>
+        <div class="col-md-3"><div class="card shadow-sm p-4 text-center"><h5>Enrolled Farmers</h5><h2 class="text-info">{{ enrolled_farmers }}</h2></div></div>
+        <div class="col-md-3"><div class="card shadow-sm p-4 text-center"><h5>Premium Payments</h5><h2 class="text-warning">{{ premium_payments }}</h2></div></div>
+        <div class="col-md-3"><div class="card shadow-sm p-4 text-center"><h5>Pending Claims</h5><h2 class="text-danger">{{ pending_claims }}</h2></div></div>
+        <div class="col-md-3"><div class="card shadow-sm p-4 text-center"><h5>Approved Claims</h5><h2 class="text-success">{{ approved_claims }}</h2></div></div>
+        <div class="col-md-3"><div class="card shadow-sm p-4 text-center"><h5>Rejected Claims</h5><h2 class="text-secondary">{{ rejected_claims }}</h2></div></div>
+        <div class="col-md-3"><div class="card shadow-sm p-4 text-center"><h5>Settled Claims</h5><h2 class="text-primary">{{ settled_claims }}</h2></div></div>
+    </div>
+</div>
+{% endblock %}

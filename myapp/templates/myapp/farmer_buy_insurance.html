@@ -1,0 +1,49 @@
+{% extends 'myapp/erp_base.html' %}
+{% block title %}Buy Insurance{% endblock %}
+{% block erp_content %}
+<div class="container-fluid px-0">
+    <div class="row">
+        <div class="col-md-5">
+            <h3 class="fw-bold mb-4">Policy Details</h3>
+            <div class="card shadow-sm border-0 p-4">
+                <h5 class="fw-bold text-success mb-3">{{ policy.name }}</h5>
+                <p class="mb-2"><strong>Eligible Crop:</strong> <span class="badge bg-light text-dark border">{{ policy.eligible_crop }}</span></p>
+                <p class="mb-2"><strong>Covered Risks:</strong> {{ policy.covered_risks }}</p>
+                <p class="mb-2"><strong>Max Coverage Limit:</strong> <span class="fw-bold text-success">₹{{ policy.max_coverage_amount }}</span></p>
+                <p class="mb-2"><strong>Annual Premium:</strong> <span class="fw-bold text-primary">₹{{ policy.premium_amount }}</span></p>
+                <p class="mb-2"><strong>Coverage Duration:</strong> {{ policy.coverage_duration }}</p>
+                <p class="mb-2"><strong>Payment Frequency:</strong> Once per year (Single full payment)</p>
+                <p class="mb-2"><strong>Coverage Dates:</strong> {{ policy.coverage_start_date|date:"d M Y" }} to {{ policy.coverage_end_date|date:"d M Y" }}</p>
+                <p class="mb-2"><strong>Claim Deadline:</strong> Within {{ policy.claim_reporting_deadline_days }} days of incident</p>
+                <hr>
+                <h6 class="fw-bold">Terms & Conditions:</h6>
+                <div class="p-3 bg-light rounded small text-muted" style="max-height: 180px; overflow-y: auto; white-space: pre-line;">
+{{ policy.terms_and_conditions }}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-7">
+            <h3 class="fw-bold mb-4">Enrollment Details</h3>
+            <div class="card shadow-sm border-0 p-4">
+                <div class="alert alert-info py-2 small mb-3">
+                    <i class="bi bi-info-circle-fill me-1"></i>
+                    <strong>Payment Rule:</strong> The complete annual premium of <strong>₹{{ policy.premium_amount }}</strong> is paid in one payment. No monthly installments.
+                </div>
+                <form method="post">
+                    {% csrf_token %}
+                    {{ form.as_p }}
+                    <div class="form-check mb-4 mt-3">
+                        <input class="form-check-input" type="checkbox" name="accepted_terms" id="accepted_terms" required>
+                        <label class="form-check-label" for="accepted_terms">
+                            I accept the terms and conditions and agree to pay the annual premium of ₹{{ policy.premium_amount }}
+                        </label>
+                    </div>
+                    <button type="submit" class="btn btn-success w-100 rounded-pill py-2 fw-semibold">
+                        Confirm Enrollment & Proceed to Payment
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

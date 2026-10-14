@@ -1,0 +1,37 @@
+{% extends 'myapp/erp_base.html' %}
+{% block title %}My Claims{% endblock %}
+{% block erp_content %}
+<div class="container-fluid px-0">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="fw-bold mb-0">My Insurance Claims</h3>
+        <a href="{% url 'farmer_apply_claim' %}" class="btn btn-success rounded-pill">
+            <i class="bi bi-plus-circle"></i> Apply for New Claim
+        </a>
+    </div>
+    <div class="row g-4">
+        {% for c in claims %}
+        <div class="col-md-6">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2">
+                        <h5 class="fw-bold">{{ c.claim_id }}</h5>
+                        <span class="badge {% if c.status == 'APPROVED' or c.status == 'PAID' %}bg-success{% elif c.status == 'REJECTED' %}bg-danger{% else %}bg-warning{% endif %}">{{ c.get_status_display }}</span>
+                    </div>
+                    <p class="mb-1"><strong>Policy:</strong> {{ c.enrollment.policy.name }}</p>
+                    <p class="mb-1"><strong>Incident:</strong> {{ c.incident_type }} on {{ c.incident_date }}</p>
+                    <p class="mb-1"><strong>Est. Loss:</strong> ₹{{ c.estimated_financial_loss }}</p>
+                    {% if c.approved_amount %}
+                        <p class="mb-1 text-success"><strong>Approved Amount:</strong> ₹{{ c.approved_amount }}</p>
+                    {% endif %}
+                    {% if c.rejection_reason %}
+                        <p class="mb-1 text-danger"><strong>Reason:</strong> {{ c.rejection_reason }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12"><div class="alert alert-info">You have not submitted any claims.</div></div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

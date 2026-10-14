@@ -119,23 +119,57 @@
                                     <td>
                                         {% if p.delivery_orders.first %}
                                             {% with order=p.delivery_orders.first %}
-                                                <div class="small mb-1">Status: <strong>{{ order.status }}</strong></div>
+                                                <div class="small mb-1 fw-bold">Status: <span class="text-primary">{{ order.status }}</span></div>
                                                 {% if order.delivery_person %}
-                                                    <div class="small text-muted mb-1">
-                                                        <i class="bi bi-person-fill"></i> {{ order.delivery_person.full_name }} ({{ order.delivery_person.delivery_id }})<br>
+                                                    <div class="small text-muted mb-2 border-bottom pb-1">
+                                                        <i class="bi bi-person-fill"></i> {{ order.delivery_person.full_name }}<br>
                                                         <i class="bi bi-telephone-fill"></i> {{ order.delivery_person.phone }}
                                                     </div>
                                                 {% else %}
-                                                    <div class="small text-muted">Awaiting Assignment</div>
+                                                    <div class="small text-muted mb-2 border-bottom pb-1">Awaiting Assignment</div>
                                                 {% endif %}
                                                 
-                                                {% if order.status == 'AWAITING_CUSTOMER_CONFIRMATION' %}
-                                                    <form method="post" action="{% url 'customer_confirm_delivery' order.order_id %}" onsubmit="return confirm('Have you received the product?');">
-                                                        {% csrf_token %}
-                                                        <button type="submit" class="btn btn-sm btn-success mt-1 shadow-sm"><i class="bi bi-check-circle me-1"></i>Confirm Product Received</button>
-                                                    </form>
-                                                {% endif %}
-                                                
+                                                <div class="small delivery-timeline mt-2">
+                                                    <div class="{% if order.status in 'ASSIGNED,PICKED_UP,OUT_FOR_DELIVERY,DELIVERED,COMPLETED' %}text-success fw-bold{% else %}text-muted{% endif %}">
+                                                        {% if order.status in 'ASSIGNED,PICKED_UP,OUT_FOR_DELIVERY,DELIVERED,COMPLETED' %}✓{% else %}○{% endif %} Assigned
+                                                    </div>
+                                                    <div class="text-muted ms-1" style="font-size: 0.7em;">↓</div>
+                                                    <div class="{% if order.status in 'PICKED_UP,OUT_FOR_DELIVERY,DELIVERED,COMPLETED' %}text-success fw-bold{% else %}text-muted{% endif %}">
+                                                        {% if order.status in 'PICKED_UP,OUT_FOR_DELIVERY,DELIVERED,COMPLETED' %}✓{% else %}○{% endif %} Picked Up
+                                                    </div>
+                                                    <div class="text-muted ms-1" style="font-size: 0.7em;">↓</div>
+                                                    <div class="{% if order.status in 'OUT_FOR_DELIVERY,DELIVERED,COMPLETED' %}text-success fw-bold{% else %}text-muted{% endif %}">
+                                                        {% if order.status in 'OUT_FOR_DELIVERY,DELIVERED,COMPLETED' %}✓{% else %}○{% endif %} Out for Delivery
+                                                    </div>
+                                                    <div class="text-muted ms-1" style="font-size: 0.7em;">↓</div>
+                                                    <div class="{% if order.status in 'DELIVERED,COMPLETED' %}text-success fw-bold{% else %}text-muted{% endif %}">
+                                                        {% if order.status in 'DELIVERED,COMPLETED' %}✓{% else %}○{% endif %} Delivered
+                                                    </div>
+                                                    <div class="text-muted ms-1" style="font-size: 0.7em;">↓</div>
+                                                    <div class="{% if order.status == 'COMPLETED' %}text-success fw-bold{% else %}text-muted{% endif %}">
+                                                        {% if order.status == 'COMPLETED' %}✓{% else %}○{% endif %} Completed
+                                                    </div>
+                                                </div>
+
+                                                <div class="mt-2 small">
+                                                    {% if order.status == 'ASSIGNED' %}
+                                                        <span class="text-info">Delivery Person Assigned.</span>
+                                                    {% elif order.status == 'PICKED_UP' %}
+                                                        <span class="text-info">Your product has been picked up by the delivery person.</span>
+                                                    {% elif order.status == 'OUT_FOR_DELIVERY' %}
+                                                        <span class="text-info">Your product is out for delivery.</span>
+                                                    {% elif order.status == 'DELIVERED' %}
+                                                        <span class="text-warning fw-bold d-block mb-1">Your product has been delivered. Please confirm receipt.</span>
+                                                        <form method="post" action="{% url 'customer_confirm_delivery' order.order_id %}" onsubmit="return confirm('Have you received the product?');">
+                                                            {% csrf_token %}
+                                                            <button type="submit" class="btn btn-sm btn-success mt-1 shadow-sm"><i class="bi bi-check-circle me-1"></i>Confirm Delivery</button>
+                                                        </form>
+                                                    {% elif order.status == 'COMPLETED' %}
+                                                        <span class="text-success fw-bold d-block border-top pt-1 mt-1">Delivery Completed Successfully</span>
+                                                        <span class="text-muted" style="font-size: 0.8em;">Delivered: {{ order.delivered_at|date:"M d, H:i"|default:"-" }}</span><br>
+                                                        <span class="text-muted" style="font-size: 0.8em;">Confirmed: {{ order.customer_confirmation_date|date:"M d, H:i"|default:"-" }}</span>
+                                                    {% endif %}
+                                                </div>
                                             {% endwith %}
                                         {% else %}
                                             <span class="badge bg-secondary">Processing</span>

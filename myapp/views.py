@@ -8,7 +8,8 @@ from django.db import transaction
 from .models import (
     Farmer, Admin, Customer, Worker, Delivery, DeliveryOrder,
     MarketSettings, Product, BargainingBid, FarmerWallet, AdminWallet, Sale,
-    WorkerRequest, WorkerWageOffer, WorkerTask, WorkerSalarySettlement, WalletTransaction, AdminSupply, SupplyPurchase
+    WorkerRequest, WorkerWageOffer, WorkerTask, WorkerSalarySettlement, WalletTransaction, AdminSupply, SupplyPurchase,
+    InsuranceOfficer, InsurancePolicy, FarmerPolicyEnrollment, PremiumPayment, InsuranceClaim, ClaimSettlement, PolicyCoveragePeriod
 )
 from .forms import (
     FarmerRegistrationForm, FarmerLoginForm, FarmerProfileForm, AdminLoginForm,
@@ -16,7 +17,8 @@ from .forms import (
     WorkerRegistrationForm, WorkerLoginForm, WorkerProfileForm,
     DeliveryRegistrationForm, DeliveryLoginForm, DeliveryProfileForm, AdminDeliveryForm,
     MarketSettingsForm, ProductForm, BidForm,
-    AdminWorkerForm, WorkerRequestForm, WorkerWageOfferForm, WorkerTaskForm, AdminSupplyForm
+    AdminWorkerForm, WorkerRequestForm, WorkerWageOfferForm, WorkerTaskForm, AdminSupplyForm,
+    OfficerLoginForm, InsurancePolicyForm, FarmerPolicyEnrollmentForm, InsuranceClaimForm, ClaimReviewForm, InsuranceOfficerForm
 )
 
 
@@ -69,6 +71,15 @@ def get_current_delivery(request):
     except Delivery.DoesNotExist:
         return None
 
+def get_current_officer(request):
+    officer_id = request.session.get('officer_id')
+    if not officer_id:
+        return None
+    try:
+        return InsuranceOfficer.objects.get(officer_id=officer_id)
+    except InsuranceOfficer.DoesNotExist:
+        return None
+
 def get_active_session_redirect(request):
     """Returns redirect response if any active user session exists, else None."""
     if request.session.get('farmer_id'):
@@ -81,6 +92,8 @@ def get_active_session_redirect(request):
         return redirect('delivery_dashboard')
     if request.session.get('admin_id'):
         return redirect('admin_dashboard')
+    if request.session.get('officer_id'):
+        return redirect('officer_dashboard')
     return None
 
 def clear_all_sessions(request):
@@ -89,7 +102,8 @@ def clear_all_sessions(request):
                 'customer_id', 'customer_email', 'customer_name',
                 'worker_id', 'worker_email', 'worker_name',
                 'delivery_id', 'delivery_email', 'delivery_name',
-                'admin_id', 'admin_email', 'admin_name']:
+                'admin_id', 'admin_email', 'admin_name',
+                'officer_id', 'officer_email', 'officer_name']:
         request.session.pop(key, None)
 
 
@@ -344,8 +358,8 @@ def customer_confirm_delivery_view(request, order_id):
 
     if request.method == 'POST':
         order = get_object_or_404(DeliveryOrder, order_id=order_id, sale__customer=customer)
-        if order.status == 'AWAITING_CUSTOMER_CONFIRMATION':
-            order.status = 'DELIVERED'
+        if order.status == 'DELIVERED':
+            order.status = 'COMPLETED'
             order.customer_confirmation_date = timezone.now()
             order.save()
 
@@ -355,7 +369,7 @@ def customer_confirm_delivery_view(request, order_id):
 
             messages.success(request, "Product receipt confirmed successfully!")
         else:
-            messages.error(request, "This order is not awaiting confirmation.")
+            messages.error(request, "This order is not ready for confirmation.")
     
     return redirect('customer_dashboard')
 
@@ -452,8 +466,8 @@ def farmer_confirm_delivery_view(request, order_id):
 
     if request.method == 'POST':
         order = get_object_or_404(DeliveryOrder, order_id=order_id, sale__farmer_customer=farmer)
-        if order.status == 'AWAITING_CUSTOMER_CONFIRMATION':
-            order.status = 'DELIVERED'
+        if order.status == 'DELIVERED':
+            order.status = 'COMPLETED'
             order.customer_confirmation_date = timezone.now()
             order.save()
 
@@ -463,7 +477,7 @@ def farmer_confirm_delivery_view(request, order_id):
 
             messages.success(request, "Product receipt confirmed successfully!")
         else:
-            messages.error(request, "This order is not awaiting confirmation.")
+            messages.error(request, "This order is not ready for confirmation.")
     
     return redirect('farmer_bids')
 
@@ -628,8 +642,8 @@ def delivery_dashboard_view(request):
         messages.error(request, "Please log in to access the dashboard.")
         return redirect('delivery_login')
 
-    assigned_orders = delivery.assigned_deliveries.exclude(status='DELIVERED').order_by('-created_at')
-    completed_orders = delivery.assigned_deliveries.filter(status='DELIVERED').order_by('-updated_at')
+    assigned_orders = delivery.assigned_deliveries.exclude(status='COMPLETED').order_by('-created_at')
+    completed_orders = delivery.assigned_deliveries.filter(status='COMPLETED').order_by('-updated_at')
 
     context = {
         'delivery': delivery,
@@ -648,10 +662,23 @@ def delivery_update_status_view(request, order_id):
         new_status = request.POST.get('status')
         order = get_object_or_404(DeliveryOrder, order_id=order_id, delivery_person=delivery)
         
-        if new_status in [s[0] for s in DeliveryOrder.STATUS_CHOICES]:
-            order.status = new_status
+        if new_status == 'PICKED_UP' and order.status == 'ASSIGNED':
+            order.status = 'PICKED_UP'
+            order.picked_up_at = timezone.now()
             order.save()
             messages.success(request, f"Delivery status updated to {new_status}")
+        elif new_status == 'OUT_FOR_DELIVERY' and order.status == 'PICKED_UP':
+            order.status = 'OUT_FOR_DELIVERY'
+            order.out_for_delivery_at = timezone.now()
+            order.save()
+            messages.success(request, f"Delivery status updated to {new_status}")
+        elif new_status == 'DELIVERED' and order.status == 'OUT_FOR_DELIVERY':
+            order.status = 'DELIVERED'
+            order.delivered_at = timezone.now()
+            order.save()
+            messages.success(request, f"Delivery status updated to {new_status}")
+        else:
+            messages.error(request, "Invalid status transition.")
     
     return redirect('delivery_dashboard')
 
@@ -925,6 +952,7 @@ def admin_assign_delivery_action_view(request, order_id):
         if delivery.status == 'AVAILABLE':
             order.delivery_person = delivery
             order.status = 'ASSIGNED'
+            order.assigned_at = timezone.now()
             order.save()
             
             delivery.status = 'BUSY'
@@ -1228,6 +1256,40 @@ def farmer_wallet_view(request):
         'sales': sales,
     }
     return render(request, 'myapp/farmer_wallet.html', context)
+
+
+def farmer_wallet_topup_view(request):
+    farmer = get_current_farmer(request)
+    if not farmer:
+        messages.error(request, "Please log in as Farmer to top up your wallet.")
+        return redirect('login')
+
+    if request.method == 'POST':
+        try:
+            amount = Decimal(request.POST.get('amount', '0'))
+            if amount <= 0:
+                messages.error(request, "Please enter a valid amount greater than zero.")
+                return redirect('farmer_wallet')
+
+            with transaction.atomic():
+                wallet, _ = FarmerWallet.objects.select_for_update().get_or_create(farmer=farmer)
+                prev_balance = wallet.balance
+                wallet.balance += amount
+                wallet.save()
+
+                WalletTransaction.objects.create(
+                    farmer=farmer,
+                    amount=amount,
+                    transaction_type='WALLET_TOPUP',
+                    prev_farmer_balance=prev_balance,
+                    new_farmer_balance=wallet.balance
+                )
+
+            messages.success(request, f"Successfully added ₹{amount} to your wallet.")
+        except Exception as e:
+            messages.error(request, f"An error occurred: {str(e)}")
+
+    return redirect('farmer_wallet')
 
 
 def explore_products_view(request):
@@ -2126,3 +2188,655 @@ def farmer_supply_purchases_view(request):
         
     purchases = SupplyPurchase.objects.filter(farmer=farmer).order_by('-purchase_date')
     return render(request, 'myapp/farmer_supply_purchases.html', {'farmer': farmer, 'purchases': purchases})
+
+# --- AI Chat View ---
+import json
+from django.http import JsonResponse
+from .services.ai_service import get_ai_response
+
+def ai_chat_view(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            message = data.get('message', '').strip()
+            
+            if not message:
+                return JsonResponse({'success': False, 'error': 'Empty message'})
+                
+            history = request.session.get('ai_chat_history', [])
+            
+            response_text = get_ai_response(message, history)
+            
+            if response_text:
+                history.append({'role': 'user', 'content': message})
+                history.append({'role': 'model', 'content': response_text})
+                
+                request.session['ai_chat_history'] = history[-10:]
+                request.session.modified = True
+                
+                return JsonResponse({'success': True, 'response': response_text})
+            else:
+                return JsonResponse({'success': False, 'error': "Sorry, I couldn't process your question right now. Please try again."})
+                
+        except Exception as e:
+            print(f"Error in ai_chat_view: {e}")
+            return JsonResponse({'success': False, 'error': "Sorry, I couldn't process your question right now. Please try again."})
+            
+    return JsonResponse({'success': False, 'error': 'Invalid request method'})
+
+# ====================================================
+# AGRICULTURAL INSURANCE VIEWS - OFFICER
+# ====================================================
+
+def officer_login_view(request):
+    active_redirect = get_active_session_redirect(request)
+    if active_redirect and not request.session.get('officer_id'):
+        messages.warning(request, "You are already logged in with another user session.")
+        return active_redirect
+    if request.session.get('officer_id'):
+        return redirect('officer_dashboard')
+
+    error_message = None
+    if request.method == 'POST':
+        form = OfficerLoginForm(request.POST)
+        if form.is_valid():
+            email = form.cleaned_data.get('email')
+            password = form.cleaned_data.get('password')
+
+            try:
+                officer = InsuranceOfficer.objects.get(email=email)
+                if check_password(password, officer.password):
+                    clear_all_sessions(request)
+                    request.session['officer_id'] = officer.officer_id
+                    request.session['officer_email'] = officer.email
+                    request.session['officer_name'] = officer.full_name
+                    messages.success(request, f"Welcome back, {officer.full_name}!")
+                    return redirect('officer_dashboard')
+                else:
+                    error_message = "Invalid Email or Password"
+            except InsuranceOfficer.DoesNotExist:
+                error_message = "Invalid Email or Password"
+    else:
+        form = OfficerLoginForm()
+
+    return render(request, 'myapp/officer_login.html', {'form': form, 'error_message': error_message})
+
+def officer_dashboard_view(request):
+    officer = get_current_officer(request)
+    if not officer:
+        return redirect('officer_login')
+    
+    total_policies = InsurancePolicy.objects.count()
+    active_policies = InsurancePolicy.objects.filter(is_active=True).count()
+    enrolled_farmers = FarmerPolicyEnrollment.objects.count()
+    premium_payments = PremiumPayment.objects.filter(status='SUCCESS').count()
+    pending_claims = InsuranceClaim.objects.filter(status='SUBMITTED').count()
+    approved_claims = InsuranceClaim.objects.filter(status='APPROVED').count()
+    rejected_claims = InsuranceClaim.objects.filter(status='REJECTED').count()
+    settled_claims = ClaimSettlement.objects.count()
+
+    context = {
+        'officer': officer,
+        'total_policies': total_policies,
+        'active_policies': active_policies,
+        'enrolled_farmers': enrolled_farmers,
+        'premium_payments': premium_payments,
+        'pending_claims': pending_claims,
+        'approved_claims': approved_claims,
+        'rejected_claims': rejected_claims,
+        'settled_claims': settled_claims,
+    }
+    return render(request, 'myapp/officer_dashboard.html', context)
+
+def officer_logout_view(request):
+    request.session.pop('officer_id', None)
+    request.session.pop('officer_email', None)
+    request.session.pop('officer_name', None)
+    messages.success(request, "You have been logged out successfully.")
+    return redirect('home')
+
+def officer_policies_view(request):
+    officer = get_current_officer(request)
+    if not officer:
+        return redirect('officer_login')
+    
+    policies = InsurancePolicy.objects.all().order_by('-created_at')
+    return render(request, 'myapp/officer_policies.html', {'policies': policies, 'officer': officer})
+
+def officer_add_policy_view(request):
+    officer = get_current_officer(request)
+    if not officer:
+        return redirect('officer_login')
+    
+    if request.method == 'POST':
+        form = InsurancePolicyForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Insurance Policy added successfully.")
+            return redirect('officer_policies')
+    else:
+        form = InsurancePolicyForm()
+    
+    return render(request, 'myapp/officer_policy_form.html', {'form': form, 'title': 'Add New Policy', 'officer': officer})
+
+def officer_edit_policy_view(request, policy_id):
+    officer = get_current_officer(request)
+    if not officer:
+        return redirect('officer_login')
+    
+    policy = get_object_or_404(InsurancePolicy, policy_id=policy_id)
+    if request.method == 'POST':
+        form = InsurancePolicyForm(request.POST, instance=policy)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Insurance Policy updated successfully.")
+            return redirect('officer_policies')
+    else:
+        form = InsurancePolicyForm(instance=policy)
+    
+    return render(request, 'myapp/officer_policy_form.html', {'form': form, 'title': 'Edit Policy', 'officer': officer, 'policy': policy})
+
+def officer_toggle_policy_view(request, policy_id):
+    officer = get_current_officer(request)
+    if not officer:
+        return redirect('officer_login')
+    
+    policy = get_object_or_404(InsurancePolicy, policy_id=policy_id)
+    policy.is_active = not policy.is_active
+    policy.save()
+    messages.success(request, f"Policy {'activated' if policy.is_active else 'deactivated'} successfully.")
+    return redirect('officer_policies')
+
+def officer_enrollments_view(request):
+    officer = get_current_officer(request)
+    if not officer:
+        return redirect('officer_login')
+    
+    enrollments = FarmerPolicyEnrollment.objects.all().order_by('-enrolled_at')
+    return render(request, 'myapp/officer_enrollments.html', {'enrollments': enrollments, 'officer': officer})
+
+def officer_premiums_view(request):
+    officer = get_current_officer(request)
+    if not officer:
+        return redirect('officer_login')
+    
+    payments = PremiumPayment.objects.all().order_by('-payment_date')
+    return render(request, 'myapp/officer_premiums.html', {'payments': payments, 'officer': officer})
+
+def officer_claims_view(request):
+    officer = get_current_officer(request)
+    if not officer:
+        return redirect('officer_login')
+    
+    claims = InsuranceClaim.objects.all().order_by('-submission_date')
+    return render(request, 'myapp/officer_claims.html', {'claims': claims, 'officer': officer})
+
+def officer_claim_detail_view(request, claim_id):
+    officer = get_current_officer(request)
+    if not officer:
+        return redirect('officer_login')
+    
+    claim = get_object_or_404(InsuranceClaim, claim_id=claim_id)
+    if request.method == 'POST':
+        form = ClaimReviewForm(request.POST, instance=claim)
+        if form.is_valid():
+            claim = form.save(commit=False)
+            claim.reviewed_by = officer
+            claim.decision_date = timezone.now()
+            
+            if claim.status == 'APPROVED':
+                if not claim.approved_amount or claim.approved_amount <= 0:
+                    messages.error(request, "A positive approved compensation amount is required for approved claims.")
+                    return render(request, 'myapp/officer_claim_detail.html', {'claim': claim, 'form': form, 'officer': officer})
+                
+                max_eligible = claim.enrollment.policy.max_coverage_amount
+                if claim.approved_amount > max_eligible:
+                    messages.error(request, f"Approved compensation (₹{claim.approved_amount}) cannot exceed the policy maximum coverage limit of ₹{max_eligible}.")
+                    return render(request, 'myapp/officer_claim_detail.html', {'claim': claim, 'form': form, 'officer': officer})
+                
+                claim.status = 'SETTLEMENT_PENDING'
+            elif claim.status == 'REJECTED':
+                if not claim.rejection_reason:
+                    messages.error(request, "Rejection reason is mandatory when rejecting a claim.")
+                    return render(request, 'myapp/officer_claim_detail.html', {'claim': claim, 'form': form, 'officer': officer})
+            
+            claim.save()
+            messages.success(request, f"Claim {claim.claim_id} status updated to {claim.status}.")
+            return redirect('officer_claims')
+    else:
+        form = ClaimReviewForm(instance=claim)
+        
+    return render(request, 'myapp/officer_claim_detail.html', {'claim': claim, 'form': form, 'officer': officer})
+
+def officer_settlements_view(request):
+    officer = get_current_officer(request)
+    if not officer:
+        return redirect('officer_login')
+    
+    settlements = ClaimSettlement.objects.all().order_by('-settlement_date')
+    pending_claims = InsuranceClaim.objects.filter(status='SETTLEMENT_PENDING')
+    return render(request, 'myapp/officer_settlements.html', {'settlements': settlements, 'pending_claims': pending_claims, 'officer': officer})
+
+def officer_settle_claim_view(request, claim_id):
+    officer = get_current_officer(request)
+    if not officer:
+        return redirect('officer_login')
+        
+    claim = get_object_or_404(InsuranceClaim, claim_id=claim_id, status='SETTLEMENT_PENDING')
+    if request.method == 'POST':
+        settlement_method = request.POST.get('payment_method', 'BANK_TRANSFER')
+        reference = request.POST.get('transaction_reference', f'SIM-{claim.claim_id}')
+        
+        with transaction.atomic():
+            settlement = ClaimSettlement.objects.create(
+                claim=claim,
+                amount=claim.approved_amount,
+                payment_method=settlement_method,
+                transaction_reference=reference,
+                is_simulated=True
+            )
+            claim.status = 'PAID'
+            claim.save()
+            
+            # Optional: Credit farmer wallet if integrated
+            farmer_wallet, _ = FarmerWallet.objects.get_or_create(farmer=claim.enrollment.farmer)
+            prev_balance = farmer_wallet.balance
+            farmer_wallet.balance += claim.approved_amount
+            farmer_wallet.save()
+            
+            WalletTransaction.objects.create(
+                farmer=claim.enrollment.farmer,
+                amount=claim.approved_amount,
+                transaction_type='INSURANCE_SETTLEMENT',
+                prev_farmer_balance=prev_balance,
+                new_farmer_balance=farmer_wallet.balance
+            )
+            
+        messages.success(request, f"Claim {claim.claim_id} settled successfully.")
+        return redirect('officer_settlements')
+    return redirect('officer_settlements')
+
+
+# ====================================================
+# AGRICULTURAL INSURANCE VIEWS - FARMER
+# ====================================================
+
+def farmer_insurance_view(request):
+    farmer = get_current_farmer(request)
+    if not farmer:
+        return redirect('farmer_login')
+        
+    policies = InsurancePolicy.objects.filter(is_active=True)
+    return render(request, 'myapp/farmer_insurance_list.html', {'policies': policies})
+
+def farmer_buy_insurance_view(request, policy_id):
+    farmer = get_current_farmer(request)
+    if not farmer:
+        return redirect('farmer_login')
+        
+    policy = get_object_or_404(InsurancePolicy, policy_id=policy_id, is_active=True)
+    
+    if request.method == 'POST':
+        form = FarmerPolicyEnrollmentForm(request.POST)
+        if form.is_valid():
+            enrollment = form.save(commit=False)
+            enrollment.farmer = farmer
+            enrollment.policy = policy
+            
+            # Annual policy configuration
+            enrollment.coverage_period_start = policy.coverage_start_date
+            enrollment.coverage_period_end = policy.coverage_end_date
+            enrollment.next_renewal_date = policy.coverage_end_date
+            enrollment.premium_amount_due = policy.premium_amount  # Complete annual premium in ONE payment
+            enrollment.payment_frequency = 'YEARLY'
+            enrollment.status = 'PENDING_PAYMENT'
+            enrollment.accepted_terms = request.POST.get('accepted_terms') == 'on'
+            
+            if not enrollment.accepted_terms:
+                messages.error(request, "You must accept the terms and conditions to proceed.")
+                return render(request, 'myapp/farmer_buy_insurance.html', {'form': form, 'policy': policy})
+                
+            enrollment.save()
+            messages.success(request, f"Enrollment for {policy.name} created! Please complete the annual premium payment of ₹{policy.premium_amount} to activate coverage.")
+            return redirect('farmer_pay_premium', enrollment_id=enrollment.enrollment_id)
+    else:
+        form = FarmerPolicyEnrollmentForm(initial={'crop_name': policy.eligible_crop})
+        
+    return render(request, 'myapp/farmer_buy_insurance.html', {'form': form, 'policy': policy})
+
+def farmer_my_policies_view(request):
+    farmer = get_current_farmer(request)
+    if not farmer:
+        return redirect('farmer_login')
+        
+    enrollments = FarmerPolicyEnrollment.objects.filter(farmer=farmer).order_by('-enrolled_at')
+    
+    # Auto-update status for expired active policies
+    today = timezone.now().date()
+    for enc in enrollments:
+        if enc.status == 'ACTIVE' and enc.coverage_period_end and enc.coverage_period_end < today:
+            enc.status = 'EXPIRED'
+            enc.save(update_fields=['status'])
+            
+    return render(request, 'myapp/farmer_my_policies.html', {'enrollments': enrollments, 'today': today})
+
+def farmer_pay_premium_view(request, enrollment_id):
+    farmer = get_current_farmer(request)
+    if not farmer:
+        return redirect('farmer_login')
+        
+    enrollment = get_object_or_404(FarmerPolicyEnrollment, enrollment_id=enrollment_id, farmer=farmer)
+    
+    # Prevent duplicate payment if already active
+    if enrollment.status == 'ACTIVE':
+        messages.info(request, "This policy is already active and the annual premium has been confirmed.")
+        return redirect('farmer_my_policies')
+        
+    wallet, _ = FarmerWallet.objects.get_or_create(farmer=farmer)
+    amount_to_pay = enrollment.premium_amount_due  # Full annual premium (e.g. ₹2,000)
+    
+    if request.method == 'POST':
+        if wallet.balance >= amount_to_pay:
+            with transaction.atomic():
+                prev_balance = wallet.balance
+                wallet.balance -= amount_to_pay
+                wallet.save()
+                
+                # 1. Record wallet transaction
+                WalletTransaction.objects.create(
+                    farmer=farmer,
+                    amount=amount_to_pay,
+                    transaction_type='INSURANCE_PREMIUM',
+                    prev_farmer_balance=prev_balance,
+                    new_farmer_balance=wallet.balance
+                )
+                
+                # 2. Record Payment (full annual premium)
+                payment = PremiumPayment.objects.create(
+                    enrollment=enrollment,
+                    amount=amount_to_pay,
+                    payment_method='WALLET',
+                    transaction_reference=f"PREM-{enrollment.enrollment_id}",
+                    status='SUCCESS',
+                    is_simulated=True,
+                    installment_number=1,
+                    coverage_start_date=enrollment.coverage_period_start,
+                    coverage_end_date=enrollment.coverage_period_end
+                )
+                
+                # 3. Record historical coverage period
+                PolicyCoveragePeriod.objects.create(
+                    enrollment=enrollment,
+                    payment=payment,
+                    coverage_start_date=enrollment.coverage_period_start,
+                    coverage_end_date=enrollment.coverage_period_end,
+                    is_renewal=False
+                )
+                
+                # 4. Activate enrollment
+                enrollment.status = 'ACTIVE'
+                enrollment.last_payment_date = timezone.now()
+                enrollment.next_renewal_date = enrollment.coverage_period_end
+                enrollment.save()
+                
+            messages.success(request, f"Annual premium of ₹{amount_to_pay} paid successfully (Simulated FarmLink Wallet Payment)! Policy is now ACTIVE.")
+            return redirect('farmer_payment_receipt', payment_id=payment.payment_id)
+        else:
+            messages.error(request, f"Insufficient wallet balance to pay annual premium of ₹{amount_to_pay}. Available balance: ₹{wallet.balance}. Please top up your wallet.")
+            
+    return render(request, 'myapp/farmer_pay_premium.html', {
+        'enrollment': enrollment, 
+        'wallet': wallet, 
+        'amount_to_pay': amount_to_pay
+    })
+
+def farmer_renew_policy_view(request, enrollment_id):
+    farmer = get_current_farmer(request)
+    if not farmer:
+        return redirect('farmer_login')
+        
+    enrollment = get_object_or_404(FarmerPolicyEnrollment, enrollment_id=enrollment_id, farmer=farmer)
+    
+    # Check renewal eligibility
+    if not enrollment.can_renew:
+        messages.warning(request, f"Policy {enrollment.enrollment_id} is active until {enrollment.coverage_period_end} and not yet approaching expiry.")
+        return redirect('farmer_my_policies')
+        
+    wallet, _ = FarmerWallet.objects.get_or_create(farmer=farmer)
+    renewal_premium = enrollment.policy.premium_amount  # Configured annual renewal premium (e.g. ₹2,000)
+    today = timezone.now().date()
+    
+    # Calculate renewed coverage period
+    # If policy expired before renewal: do not provide coverage for the gap or backdate renewed coverage!
+    if today <= enrollment.coverage_period_end:
+        new_start_date = enrollment.coverage_period_end + timezone.timedelta(days=1)
+        new_end_date = new_start_date + timezone.timedelta(days=365)
+        is_gap = False
+    else:
+        new_start_date = today
+        new_end_date = today + timezone.timedelta(days=365)
+        is_gap = True
+        
+    # Prevent duplicate renewal payments for the upcoming period
+    if PolicyCoveragePeriod.objects.filter(enrollment=enrollment, coverage_start_date=new_start_date).exists():
+        messages.warning(request, "A renewal payment for this upcoming period has already been processed.")
+        return redirect('farmer_my_policies')
+
+    if request.method == 'POST':
+        if wallet.balance >= renewal_premium:
+            with transaction.atomic():
+                prev_balance = wallet.balance
+                wallet.balance -= renewal_premium
+                wallet.save()
+                
+                # 1. Record transaction
+                WalletTransaction.objects.create(
+                    farmer=farmer,
+                    amount=renewal_premium,
+                    transaction_type='INSURANCE_PREMIUM',
+                    prev_farmer_balance=prev_balance,
+                    new_farmer_balance=wallet.balance
+                )
+                
+                # 2. Next installment number
+                last_payment = enrollment.payments.order_by('-installment_number').first()
+                next_inst = (last_payment.installment_number + 1) if last_payment else 2
+                
+                # 3. Record separate payment
+                payment = PremiumPayment.objects.create(
+                    enrollment=enrollment,
+                    amount=renewal_premium,
+                    payment_method='WALLET',
+                    transaction_reference=f"REN-{enrollment.enrollment_id}-Y{next_inst}",
+                    status='SUCCESS',
+                    is_simulated=True,
+                    installment_number=next_inst,
+                    coverage_start_date=new_start_date,
+                    coverage_end_date=new_end_date
+                )
+                
+                # 4. Record separate coverage period
+                PolicyCoveragePeriod.objects.create(
+                    enrollment=enrollment,
+                    payment=payment,
+                    coverage_start_date=new_start_date,
+                    coverage_end_date=new_end_date,
+                    is_renewal=True
+                )
+                
+                # 5. Update enrollment dates & renewal date
+                enrollment.coverage_period_start = new_start_date
+                enrollment.coverage_period_end = new_end_date
+                enrollment.next_renewal_date = new_end_date
+                enrollment.last_payment_date = timezone.now()
+                enrollment.status = 'ACTIVE'
+                enrollment.save()
+                
+            messages.success(request, f"Policy successfully renewed! Active coverage: {new_start_date} to {new_end_date}.")
+            return redirect('farmer_payment_receipt', payment_id=payment.payment_id)
+        else:
+            messages.error(request, f"Insufficient wallet balance to pay renewal premium of ₹{renewal_premium}. Available balance: ₹{wallet.balance}. Please top up your wallet.")
+            
+    context = {
+        'enrollment': enrollment,
+        'wallet': wallet,
+        'renewal_premium': renewal_premium,
+        'new_start_date': new_start_date,
+        'new_end_date': new_end_date,
+        'is_gap': is_gap,
+    }
+    return render(request, 'myapp/farmer_renew_policy.html', context)
+
+def farmer_payment_receipt_view(request, payment_id):
+    farmer = get_current_farmer(request)
+    if not farmer:
+        return redirect('farmer_login')
+        
+    payment = get_object_or_404(PremiumPayment, payment_id=payment_id, enrollment__farmer=farmer)
+    return render(request, 'myapp/farmer_payment_receipt.html', {
+        'payment': payment,
+        'enrollment': payment.enrollment,
+        'policy': payment.enrollment.policy
+    })
+
+def farmer_premium_history_view(request):
+    farmer = get_current_farmer(request)
+    if not farmer:
+        return redirect('farmer_login')
+        
+    payments = PremiumPayment.objects.filter(enrollment__farmer=farmer).order_by('-payment_date')
+    return render(request, 'myapp/farmer_premium_history.html', {'payments': payments})
+
+def farmer_apply_claim_view(request):
+    farmer = get_current_farmer(request)
+    if not farmer:
+        return redirect('farmer_login')
+        
+    active_enrollments = FarmerPolicyEnrollment.objects.filter(farmer=farmer, status='ACTIVE')
+    if not active_enrollments.exists():
+        messages.warning(request, "You do not have any active insurance policies to claim against.")
+        return redirect('farmer_my_claims')
+        
+    if request.method == 'POST':
+        form = InsuranceClaimForm(request.POST, request.FILES)
+        enrollment_id = request.POST.get('enrollment_id')
+        
+        if form.is_valid() and enrollment_id:
+            try:
+                enrollment = FarmerPolicyEnrollment.objects.get(enrollment_id=enrollment_id, farmer=farmer, status='ACTIVE')
+                claim = form.save(commit=False)
+                claim.enrollment = enrollment
+                
+                today = timezone.now().date()
+                
+                # 1. Incident date must not be in the future
+                if claim.incident_date > today:
+                    messages.error(request, "Incident date cannot be in the future.")
+                    return render(request, 'myapp/farmer_apply_claim.html', {'form': form, 'enrollments': active_enrollments})
+                
+                # 2. Coverage must be effective on the incident date
+                is_within_current = (claim.incident_date >= enrollment.coverage_period_start and claim.incident_date <= enrollment.coverage_period_end)
+                is_within_historical = enrollment.coverage_periods.filter(
+                    coverage_start_date__lte=claim.incident_date,
+                    coverage_end_date__gte=claim.incident_date
+                ).exists()
+                
+                if not (is_within_current or is_within_historical):
+                    messages.error(
+                        request, 
+                        f"Incident date ({claim.incident_date}) is not covered. Your active coverage is from {enrollment.coverage_period_start} to {enrollment.coverage_period_end}."
+                    )
+                    return render(request, 'myapp/farmer_apply_claim.html', {'form': form, 'enrollments': active_enrollments})
+                
+                # 3. Claim reporting deadline verification
+                deadline_days = enrollment.policy.claim_reporting_deadline_days
+                days_passed = (today - claim.incident_date).days
+                if days_passed > deadline_days:
+                    messages.error(
+                        request, 
+                        f"Claim reporting deadline exceeded! Claims must be reported within {deadline_days} days of the incident ({days_passed} days have elapsed since the incident)."
+                    )
+                    return render(request, 'myapp/farmer_apply_claim.html', {'form': form, 'enrollments': active_enrollments})
+                
+                # 4. Affected farm area validation
+                if claim.affected_farm_area > enrollment.farm_area:
+                    messages.error(
+                        request, 
+                        f"Affected farm area ({claim.affected_farm_area} acres) cannot exceed enrolled farm area ({enrollment.farm_area} acres)."
+                    )
+                    return render(request, 'myapp/farmer_apply_claim.html', {'form': form, 'enrollments': active_enrollments})
+                
+                claim.save()
+                messages.success(request, f"Claim {claim.claim_id} submitted successfully! It will be reviewed by an Insurance Officer.")
+                return redirect('farmer_my_claims')
+            except FarmerPolicyEnrollment.DoesNotExist:
+                messages.error(request, "Invalid policy selected.")
+    else:
+        form = InsuranceClaimForm()
+        
+    return render(request, 'myapp/farmer_apply_claim.html', {'form': form, 'enrollments': active_enrollments})
+
+def farmer_my_claims_view(request):
+    farmer = get_current_farmer(request)
+    if not farmer:
+        return redirect('farmer_login')
+        
+    claims = InsuranceClaim.objects.filter(enrollment__farmer=farmer).order_by('-submission_date')
+    return render(request, 'myapp/farmer_my_claims.html', {'claims': claims})
+
+# ====================================================
+# AGRICULTURAL INSURANCE VIEWS - ADMIN
+# ====================================================
+
+def admin_officers_view(request):
+    if not request.session.get('admin_id'):
+        return redirect('admin_login')
+        
+    officers = InsuranceOfficer.objects.all().order_by('-joining_date')
+    return render(request, 'myapp/admin_officers.html', {'officers': officers})
+
+def admin_add_officer_view(request):
+    if not request.session.get('admin_id'):
+        return redirect('admin_login')
+        
+    if request.method == 'POST':
+        form = InsuranceOfficerForm(request.POST)
+        if form.is_valid():
+            officer = form.save(commit=False)
+            officer.password = make_password(form.cleaned_data['password'])
+            officer.save()
+            messages.success(request, "Insurance Officer created successfully.")
+            return redirect('admin_officers')
+    else:
+        form = InsuranceOfficerForm()
+        
+    return render(request, 'myapp/admin_add_officer.html', {'form': form})
+
+def admin_toggle_officer_view(request, officer_id):
+    if not request.session.get('admin_id'):
+        return redirect('admin_login')
+        
+    officer = get_object_or_404(InsuranceOfficer, officer_id=officer_id)
+    officer.is_active = not officer.is_active
+    officer.save()
+    messages.success(request, f"Officer {'activated' if officer.is_active else 'deactivated'} successfully.")
+    return redirect('admin_officers')
+
+def admin_insurance_dashboard_view(request):
+    if not request.session.get('admin_id'):
+        return redirect('admin_login')
+        
+    policies = InsurancePolicy.objects.all()
+    enrollments = FarmerPolicyEnrollment.objects.all()
+    payments = PremiumPayment.objects.all()
+    claims = InsuranceClaim.objects.all()
+    settlements = ClaimSettlement.objects.all()
+    
+    context = {
+        'policies': policies,
+        'enrollments': enrollments,
+        'payments': payments,
+        'claims': claims,
+        'settlements': settlements
+    }
+    return render(request, 'myapp/admin_insurance_dashboard.html', context)

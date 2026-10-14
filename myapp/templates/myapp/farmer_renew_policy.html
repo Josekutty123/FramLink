@@ -1,0 +1,89 @@
+{% extends 'myapp/erp_base.html' %}
+{% block title %}Renew Insurance Policy{% endblock %}
+{% block erp_content %}
+<div class="container-fluid px-0">
+    <div class="row justify-content-center">
+        <div class="col-md-7">
+            <h3 class="fw-bold mb-4"><i class="bi bi-arrow-repeat text-primary me-2"></i>Renew Agricultural Insurance</h3>
+            
+            <div class="card shadow-sm border-0 p-4 rounded-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold mb-0 text-success">{{ enrollment.policy.name }}</h5>
+                    <span class="badge bg-primary-subtle text-primary border">Annual Renewal</span>
+                </div>
+
+                {% if is_gap %}
+                <div class="alert alert-warning py-2 small mb-3">
+                    <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                    <strong>Policy Expired:</strong> Your previous coverage expired on {{ enrollment.coverage_period_end|date:"d M Y" }}. As per policy rules, renewed coverage begins today without retroactive gap coverage.
+                </div>
+                {% else %}
+                <div class="alert alert-info py-2 small mb-3">
+                    <i class="bi bi-shield-check me-1"></i>
+                    <strong>Seamless Renewal:</strong> Renewing before expiry extends your protection for another full year with zero coverage disruption.
+                </div>
+                {% endif %}
+
+                <div class="p-3 bg-light rounded-3 mb-4">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Insured Crop:</span>
+                        <span class="fw-semibold">{{ enrollment.crop_name }} ({{ enrollment.farm_area }} acres)</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Max Coverage Limit:</span>
+                        <span class="fw-bold text-success">₹{{ enrollment.policy.max_coverage_amount }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Current Period Expiry:</span>
+                        <span class="fw-semibold">{{ enrollment.coverage_period_end|date:"d M Y" }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">New Coverage Period:</span>
+                        <span class="fw-bold text-primary">{{ new_start_date|date:"d M Y" }} to {{ new_end_date|date:"d M Y" }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Next Renewal Date:</span>
+                        <span class="fw-semibold">{{ new_end_date|date:"d M Y" }}</span>
+                    </div>
+                    <hr class="my-2">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="fw-bold">Annual Renewal Premium Due:</span>
+                        <span class="fs-4 fw-bold text-primary">₹{{ renewal_premium }}</span>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mb-3 px-2">
+                    <span class="text-muted">FarmLink Wallet Balance:</span>
+                    <span class="fw-bold fs-5 {% if wallet.balance < renewal_premium %}text-danger{% else %}text-success{% endif %}">
+                        ₹{{ wallet.balance }}
+                    </span>
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+                    {% if wallet.balance >= renewal_premium %}
+                        <div class="alert alert-secondary py-2 small mb-3 text-center">
+                            <i class="bi bi-wallet2 me-1"></i> Payment via <strong>FarmLink Wallet</strong> <span class="badge bg-secondary ms-1">Simulated</span>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 rounded-pill py-2 fw-semibold">
+                            Confirm & Pay Annual Renewal (₹{{ renewal_premium }})
+                        </button>
+                    {% else %}
+                        <div class="alert alert-danger py-2 small mb-3 text-center">
+                            <i class="bi bi-exclamation-triangle-fill me-1"></i> Insufficient balance to pay the annual renewal premium.
+                        </div>
+                        <a href="{% url 'farmer_wallet_topup' %}" class="btn btn-outline-primary w-100 rounded-pill mb-2">
+                            Top Up Wallet (Need ₹{{ renewal_premium }})
+                        </a>
+                        <button type="button" class="btn btn-secondary w-100 rounded-pill" disabled>Pay Renewal</button>
+                    {% endif %}
+                </form>
+
+                <div class="text-center mt-3">
+                    <a href="{% url 'farmer_my_policies' %}" class="text-muted small text-decoration-none">Back to My Policies</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
