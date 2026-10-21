@@ -2240,7 +2240,7 @@ def farmer_supply_purchases_view(request):
 # --- AI Chat View ---
 import json
 from django.http import JsonResponse
-from .services.ai_service import get_ai_response
+from .services.ai_service import get_ai_response, clean_ai_response
 
 def ai_chat_view(request):
     if request.method == 'POST':
@@ -2256,6 +2256,7 @@ def ai_chat_view(request):
             response_text = get_ai_response(message, history)
             
             if response_text:
+                response_text = clean_ai_response(response_text)
                 history.append({'role': 'user', 'content': message})
                 history.append({'role': 'model', 'content': response_text})
                 
