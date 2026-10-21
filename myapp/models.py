@@ -1,6 +1,8 @@
 import re
 from decimal import Decimal
+from datetime import timedelta
 from django.db import models
+from django.utils import timezone
 
 
 class Farmer(models.Model):
@@ -836,14 +838,14 @@ class FarmerPolicyEnrollment(models.Model):
         if not self.coverage_period_end or self.status not in ['ACTIVE', 'EXPIRED']:
             return False
         today = timezone.now().date()
-        return today >= (self.coverage_period_end - timezone.timedelta(days=30))
+        return today >= (self.coverage_period_end - timedelta(days=30))
 
     @property
     def can_renew(self):
         if self.status not in ['ACTIVE', 'EXPIRED']:
             return False
         today = timezone.now().date()
-        return today >= (self.coverage_period_end - timezone.timedelta(days=30))
+        return today >= (self.coverage_period_end - timedelta(days=30))
 
     def save(self, *args, **kwargs):
         if not self.enrollment_id:

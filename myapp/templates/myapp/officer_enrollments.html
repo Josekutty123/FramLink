@@ -8,7 +8,7 @@
             <table class="table table-hover mb-0">
                 <thead class="table-light">
                     <tr>
-                        <th>Enrollment ID</th><th>Farmer</th><th>Policy</th><th>Crop & Area</th><th>Coverage Period</th><th>Annual Premium</th><th>Next Renewal</th><th>Status</th>
+                        <th>Enrollment ID</th><th>Farmer</th><th>Policy</th><th>Crop & Area</th><th>Coverage Period</th><th>Annual Premium</th><th>Next Renewal</th><th>Status</th><th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -26,9 +26,16 @@
                                 {{ enc.get_status_display }}
                             </span>
                         </td>
+                        <td>
+                            <a href="{% url 'officer_delete_enrollment' enc.enrollment_id %}" 
+                               class="btn btn-sm btn-outline-danger" 
+                               onclick="return confirm('Are you sure you want to delete enrollment {{ enc.enrollment_id }} for {{ enc.farmer.full_name }}?');">
+                                <i class="bi bi-trash"></i> Delete
+                            </a>
+                        </td>
                     </tr>
                     {% empty %}
-                    <tr><td colspan="8" class="text-center py-4">No enrollments found.</td></tr>
+                    <tr><td colspan="9" class="text-center py-4">No enrollments found.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>

@@ -19,10 +19,16 @@
                         <div class="mb-3">
                             {{ form.email.label_tag }}
                             {{ form.email }}
+                            {% if form.email.errors %}
+                                <div class="text-danger small mt-1">{{ form.email.errors.0 }}</div>
+                            {% endif %}
                         </div>
                         <div class="mb-4">
                             {{ form.password.label_tag }}
                             {{ form.password }}
+                            {% if form.password.errors %}
+                                <div class="text-danger small mt-1">{{ form.password.errors.0 }}</div>
+                            {% endif %}
                         </div>
                         <button type="submit" class="btn btn-primary w-100 py-2 fw-bold rounded-pill">Login</button>
                     </form>

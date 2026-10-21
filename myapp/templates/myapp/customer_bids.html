@@ -5,13 +5,50 @@
 
 {% block erp_content %}
 <div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="h3 mb-0 text-gray-800">My Bids & Bargaining Results</h2>
+    <!-- Header Title & Quick Actions -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+        <div>
+            <h2 class="h3 fw-bold text-success mb-1">
+                <i class="bi bi-list-check me-2"></i> My Bids & Bargaining Results
+            </h2>
+            <p class="text-muted small mb-0">Track products you have won and your active live bargaining participations.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'explore_products' %}" class="btn btn-outline-success rounded-pill px-3 shadow-sm">
+                <i class="bi bi-shop me-1"></i> Explore Marketplace
+            </a>
+            <a href="{% url 'customer_dashboard' %}" class="btn btn-outline-secondary rounded-pill px-3 shadow-sm">
+                <i class="bi bi-grid-1x2 me-1"></i> Dashboard
+            </a>
+        </div>
     </div>
 
+    <!-- Filter Pills Navigation -->
+    <div class="d-flex flex-wrap gap-2 mb-3">
+        <a href="{% url 'customer_bids' %}?filter=all" class="btn btn-sm rounded-pill px-3 fw-semibold {% if filter_type == 'all' or not filter_type %}btn-success text-white shadow-sm{% else %}btn-outline-secondary bg-white{% endif %}">
+            All My Results & Bids <span class="badge {% if filter_type == 'all' or not filter_type %}bg-white text-success{% else %}bg-secondary text-white{% endif %} rounded-pill ms-1">{{ all_count }}</span>
+        </a>
+        <a href="{% url 'customer_bids' %}?filter=won" class="btn btn-sm rounded-pill px-3 fw-semibold {% if filter_type == 'won' %}btn-success text-white shadow-sm{% else %}btn-outline-secondary bg-white{% endif %}">
+            <i class="bi bi-trophy-fill me-1 text-warning"></i> Won Products <span class="badge {% if filter_type == 'won' %}bg-white text-success{% else %}bg-success text-white{% endif %} rounded-pill ms-1">{{ won_count }}</span>
+        </a>
+        <a href="{% url 'customer_bids' %}?filter=active" class="btn btn-sm rounded-pill px-3 fw-semibold {% if filter_type == 'active' %}btn-success text-white shadow-sm{% else %}btn-outline-secondary bg-white{% endif %}">
+            <i class="bi bi-broadcast me-1"></i> Active Bargaining <span class="badge {% if filter_type == 'active' %}bg-white text-success{% else %}bg-warning text-dark{% endif %} rounded-pill ms-1">{{ active_count }}</span>
+        </a>
+    </div>
+
+    <!-- Results Table Card -->
     <div class="card shadow-sm border-0 rounded-4">
-        <div class="card-header bg-white py-3">
-            <h6 class="m-0 font-weight-bold text-success"><i class="bi bi-list-check me-2"></i> Bargaining History</h6>
+        <div class="card-header bg-white py-3 border-0">
+            <h6 class="m-0 font-weight-bold text-success">
+                <i class="bi bi-check-circle-fill me-2"></i>
+                {% if filter_type == 'won' %}
+                    My Won Products
+                {% elif filter_type == 'active' %}
+                    Active Live Bargaining Rooms
+                {% else %}
+                    My Personal Results & Active Rooms
+                {% endif %}
+            </h6>
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
@@ -23,48 +60,80 @@
                             <th>Farmer</th>
                             <th>Quantity</th>
                             <th>Starting Price</th>
+                            <th>My Highest Bid</th>
                             <th>Status</th>
-                            <th>Result / Winner</th>
+                            <th>My Result</th>
                             <th>Action</th>
                         </tr>
                     </thead>
                     <tbody class="border-top-0">
                         {% for product in bid_products %}
                         <tr>
-                            <td class="fw-bold">{{ product.product_id }}</td>
-                            <td>{{ product.product_name }}</td>
+                            <td class="fw-bold text-success">{{ product.product_id }}</td>
+                            <td class="fw-semibold">{{ product.product_name }}</td>
                             <td>{{ product.farmer.full_name }}</td>
                             <td>{{ product.quantity }} {{ product.unit }}</td>
                             <td>₹{{ product.price_per_unit }} / {{ product.unit }}</td>
                             <td>
-                                {% if product.status == 'AVAILABLE' %}
-                                    <span class="badge bg-warning text-dark px-2 py-1 rounded-pill">Active</span>
+                                {% if product.my_highest_bid %}
+                                    <span class="fw-bold text-dark">₹{{ product.my_highest_bid }}</span>
                                 {% else %}
-                                    <span class="badge bg-secondary px-2 py-1 rounded-pill">Closed</span>
+                                    <span class="text-muted">-</span>
                                 {% endif %}
                             </td>
                             <td>
                                 {% if product.status == 'AVAILABLE' %}
-                                    <span class="text-muted small">Bargaining ongoing</span>
+                                    <span class="badge bg-warning text-dark px-2.5 py-1 rounded-pill">Active</span>
                                 {% else %}
-                                    {% if product.winning_customer.customer_id == customer.customer_id %}
-                                        <span class="badge bg-success px-3 py-2 rounded-pill"><i class="bi bi-trophy-fill text-warning me-1"></i> You Won!</span>
-                                    {% else %}
-                                        <span class="text-danger fw-bold small">Sold to: {{ product.winning_customer.full_name }}</span>
-                                    {% endif %}
+                                    <span class="badge bg-secondary px-2.5 py-1 rounded-pill">Closed</span>
                                 {% endif %}
                             </td>
                             <td>
-                                <a href="{% url 'live_bargaining' product.product_id %}" class="btn btn-sm btn-outline-info">
-                                    <i class="bi bi-eye"></i> View Room
-                                </a>
+                                {% if product.status == 'AVAILABLE' %}
+                                    <span class="badge bg-warning bg-opacity-25 text-dark border border-warning px-2.5 py-1 rounded-pill">
+                                        <i class="bi bi-hourglass-split me-1"></i> Bargaining Ongoing
+                                    </span>
+                                {% elif product.winning_customer.customer_id == customer.customer_id %}
+                                    <span class="badge bg-success px-3 py-1.5 rounded-pill shadow-sm">
+                                        <i class="bi bi-trophy-fill text-warning me-1"></i> You Won!
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-secondary px-2.5 py-1 rounded-pill">Not Won</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if product.status == 'AVAILABLE' %}
+                                    <a href="{% url 'live_bargaining' product.product_id %}" class="btn btn-sm btn-outline-success rounded-pill px-3 shadow-sm">
+                                        <i class="bi bi-broadcast me-1"></i> Live Room
+                                    </a>
+                                {% elif product.winning_customer.customer_id == customer.customer_id %}
+                                    <a href="{% url 'customer_dashboard' %}" class="btn btn-sm btn-success rounded-pill px-3 shadow-sm">
+                                        <i class="bi bi-bag-check-fill me-1"></i> View Order
+                                    </a>
+                                {% else %}
+                                    <a href="{% url 'live_bargaining' product.product_id %}" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+                                        <i class="bi bi-eye"></i> View Room
+                                    </a>
+                                {% endif %}
                             </td>
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="8" class="text-center py-5 text-muted">
-                                <i class="bi bi-inbox fs-1 d-block mb-3 opacity-25"></i>
-                                You have not placed any bids yet.
+                            <td colspan="9" class="text-center py-5 text-muted">
+                                <i class="bi bi-trophy fs-1 d-block mb-3 text-muted opacity-25"></i>
+                                <h6 class="fw-bold text-dark mb-1">No Results to Display</h6>
+                                <p class="text-muted small mb-3">
+                                    {% if filter_type == 'won' %}
+                                        You have not won any bargaining produce yet.
+                                    {% elif filter_type == 'active' %}
+                                        You currently have no active bargaining bids.
+                                    {% else %}
+                                        You have not won any products yet and have no active bids.
+                                    {% endif %}
+                                </p>
+                                <a href="{% url 'explore_products' %}" class="btn btn-sm btn-success rounded-pill px-4 shadow-sm">
+                                    <i class="bi bi-shop me-1"></i> Explore Marketplace
+                                </a>
                             </td>
                         </tr>
                         {% endfor %}

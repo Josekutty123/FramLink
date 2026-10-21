@@ -19,7 +19,7 @@
                         </div>
                     {% endif %}
 
-                    <form method="post" action="{% url 'customer_register' %}" novalidate>
+                    <form method="post" action="{% url 'customer_register' %}">
                         {% csrf_token %}
                         
                         <div class="row g-3 mb-3">

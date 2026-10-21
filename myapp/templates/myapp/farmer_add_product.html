@@ -42,49 +42,98 @@
                         <p class="text-muted small">Specify quantity, unit type, starting price, and upload a clear product image.</p>
                     </div>
                     <div class="card-body p-4">
-                        <form method="POST" enctype="multipart/form-data" action="{% if is_edit %}{% url 'farmer_edit_product' product.product_id %}{% else %}{% url 'farmer_add_product' %}{% endif %}">
+                        {% if form.errors %}
+                            <div class="alert alert-danger rounded-4 mb-4" role="alert">
+                                <i class="bi bi-exclamation-triangle-fill me-2"></i> Please correct the errors highlighted below.
+                            </div>
+                        {% endif %}
+
+                        <form id="productForm" method="POST" enctype="multipart/form-data" action="{% if is_edit %}{% url 'farmer_edit_product' product.product_id %}{% else %}{% url 'farmer_add_product' %}{% endif %}">
                             {% csrf_token %}
                             <div class="row g-3">
                                 <div class="col-md-6">
-                                    <label class="form-label fw-semibold text-secondary">Product Name</label>
+                                    <label class="form-label fw-semibold text-secondary" for="{{ form.product_name.id_for_label }}">
+                                        Product Name <span class="text-danger">*</span>
+                                    </label>
                                     {{ form.product_name }}
+                                    {% if form.product_name.errors %}
+                                        <div class="text-danger small mt-1 field-backend-error">{{ form.product_name.errors.0 }}</div>
+                                    {% endif %}
+                                    <div class="invalid-feedback" id="product_name_feedback"></div>
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label fw-semibold text-secondary">Category</label>
+                                    <label class="form-label fw-semibold text-secondary" for="{{ form.category.id_for_label }}">
+                                        Category <span class="text-danger">*</span>
+                                    </label>
                                     {{ form.category }}
-                                    <small class="text-muted">Enter product category (e.g. Vegetables, Fruits, Dairy Products)</small>
+                                    <small class="text-muted d-block">Enter product category (e.g. Vegetables, Fruits, Dairy Products)</small>
+                                    {% if form.category.errors %}
+                                        <div class="text-danger small mt-1 field-backend-error">{{ form.category.errors.0 }}</div>
+                                    {% endif %}
+                                    <div class="invalid-feedback" id="category_feedback"></div>
                                 </div>
                                 <div class="col-12">
-                                    <label class="form-label fw-semibold text-secondary">Description</label>
+                                    <label class="form-label fw-semibold text-secondary" for="{{ form.description.id_for_label }}">
+                                        Description <span class="text-danger">*</span>
+                                    </label>
                                     {{ form.description }}
+                                    {% if form.description.errors %}
+                                        <div class="text-danger small mt-1 field-backend-error">{{ form.description.errors.0 }}</div>
+                                    {% endif %}
+                                    <div class="invalid-feedback" id="description_feedback"></div>
                                 </div>
 
                                 <div class="col-md-6">
-                                    <label class="form-label fw-semibold text-secondary">Quantity</label>
+                                    <label class="form-label fw-semibold text-secondary" for="{{ form.quantity.id_for_label }}">
+                                        Quantity <span class="text-danger">*</span>
+                                    </label>
                                     {{ form.quantity }}
+                                    {% if form.quantity.errors %}
+                                        <div class="text-danger small mt-1 field-backend-error">{{ form.quantity.errors.0 }}</div>
+                                    {% endif %}
+                                    <div class="invalid-feedback" id="quantity_feedback"></div>
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label fw-semibold text-secondary">Unit</label>
+                                    <label class="form-label fw-semibold text-secondary" for="{{ form.unit.id_for_label }}">
+                                        Unit <span class="text-danger">*</span>
+                                    </label>
                                     {{ form.unit }}
-                                    <small class="text-muted">Options: Kg, Liter, Pieces</small>
+                                    <small class="text-muted d-block">Options: Kg, Liter, Pieces</small>
+                                    {% if form.unit.errors %}
+                                        <div class="text-danger small mt-1 field-backend-error">{{ form.unit.errors.0 }}</div>
+                                    {% endif %}
+                                    <div class="invalid-feedback" id="unit_feedback"></div>
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label fw-semibold text-secondary">Price Per Unit (₹)</label>
+                                    <label class="form-label fw-semibold text-secondary" for="{{ form.price_per_unit.id_for_label }}">
+                                        Price Per Unit (₹) <span class="text-danger">*</span>
+                                    </label>
                                     {{ form.price_per_unit }}
-                                    <small class="text-muted">Starting price per unit for bargaining</small>
+                                    <small class="text-muted d-block">Starting price per unit for bargaining (min: ₹1)</small>
+                                    {% if form.price_per_unit.errors %}
+                                        <div class="text-danger small mt-1 field-backend-error">{{ form.price_per_unit.errors.0 }}</div>
+                                    {% endif %}
+                                    <div class="invalid-feedback" id="price_per_unit_feedback"></div>
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label fw-semibold text-secondary">Upload Image</label>
+                                    <label class="form-label fw-semibold text-secondary" for="{{ form.image.id_for_label }}">
+                                        Upload Image <span class="text-danger">*</span>
+                                    </label>
                                     {{ form.image }}
+                                    <small class="text-muted d-block">Allowed formats: PNG, JPG, JPEG</small>
                                     {% if is_edit and product.image %}
                                         <small class="text-success d-block mt-1">Current image: <a href="{{ product.image.url }}" target="_blank">View Image</a></small>
                                     {% endif %}
+                                    {% if form.image.errors %}
+                                        <div class="text-danger small mt-1 field-backend-error">{{ form.image.errors.0 }}</div>
+                                    {% endif %}
+                                    <div class="invalid-feedback" id="image_feedback"></div>
                                 </div>
                             </div>
 
                             <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
                                 <a href="{% url 'farmer_products' %}" class="btn btn-light rounded-pill px-4">Cancel</a>
-                                <button type="submit" class="btn btn-success rounded-pill px-5 shadow-sm fw-semibold">
+                                <button type="submit" id="saveProductBtn" class="btn btn-success rounded-pill px-5 shadow-sm fw-semibold">
                                     <i class="bi bi-check-lg me-1"></i> Save Product
                                 </button>
                             </div>
@@ -95,4 +144,253 @@
         </div>
     {% endif %}
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('productForm');
+    if (!form) return;
+
+    form.noValidate = true;
+
+    const productNameInput = document.getElementById('id_product_name');
+    const categoryInput = document.getElementById('id_category');
+    const descInput = document.getElementById('id_description');
+    const qtyInput = document.getElementById('id_quantity');
+    const unitInput = document.getElementById('id_unit');
+    const priceInput = document.getElementById('id_price_per_unit');
+    const imageInput = document.getElementById('id_image');
+    const submitBtn = document.getElementById('saveProductBtn');
+
+    // Highlight any fields that have backend errors rendered on page load
+    document.querySelectorAll('.field-backend-error').forEach(function(errEl) {
+        const parentCol = errEl.closest('div');
+        if (parentCol) {
+            const input = parentCol.querySelector('.form-control, .form-select');
+            if (input) {
+                input.classList.add('is-invalid');
+            }
+        }
+    });
+
+    function setFieldError(input, feedbackId, message) {
+        if (!input) return;
+        input.classList.add('is-invalid');
+        const feedback = document.getElementById(feedbackId);
+        if (feedback) {
+            feedback.textContent = message;
+            feedback.style.display = 'block';
+        }
+        const parentCol = input.closest('div');
+        if (parentCol) {
+            const backendErr = parentCol.querySelector('.field-backend-error');
+            if (backendErr) {
+                backendErr.style.display = 'none';
+            }
+        }
+    }
+
+    function clearFieldError(input, feedbackId) {
+        if (!input) return;
+        input.classList.remove('is-invalid');
+        const feedback = document.getElementById(feedbackId);
+        if (feedback) {
+            feedback.textContent = '';
+            feedback.style.display = 'none';
+        }
+        const parentCol = input.closest('div');
+        if (parentCol) {
+            const backendErr = parentCol.querySelector('.field-backend-error');
+            if (backendErr) {
+                backendErr.style.display = 'none';
+            }
+        }
+    }
+
+    function validateProductName() {
+        if (!productNameInput) return true;
+        const val = productNameInput.value.trim();
+        if (!val) {
+            setFieldError(productNameInput, 'product_name_feedback', 'Product name is required.');
+            return false;
+        }
+        clearFieldError(productNameInput, 'product_name_feedback');
+        return true;
+    }
+
+    function validateCategory() {
+        if (!categoryInput) return true;
+        const val = categoryInput.value.trim();
+        if (!val) {
+            setFieldError(categoryInput, 'category_feedback', 'Category is required.');
+            return false;
+        }
+        clearFieldError(categoryInput, 'category_feedback');
+        return true;
+    }
+
+    function validateDescription() {
+        if (!descInput) return true;
+        const val = descInput.value.trim();
+        if (!val) {
+            setFieldError(descInput, 'description_feedback', 'Description is required.');
+            return false;
+        }
+        clearFieldError(descInput, 'description_feedback');
+        return true;
+    }
+
+    function validateQuantity() {
+        if (!qtyInput) return true;
+        const raw = qtyInput.value.trim();
+        if (!raw) {
+            setFieldError(qtyInput, 'quantity_feedback', 'Quantity is required.');
+            return false;
+        }
+        const num = Number(raw);
+        if (isNaN(num)) {
+            setFieldError(qtyInput, 'quantity_feedback', 'Enter a valid quantity.');
+            return false;
+        }
+        if (num < 1) {
+            setFieldError(qtyInput, 'quantity_feedback', 'Quantity must be at least 1.');
+            return false;
+        }
+        clearFieldError(qtyInput, 'quantity_feedback');
+        return true;
+    }
+
+    function validateUnit() {
+        if (!unitInput) return true;
+        const val = unitInput.value.trim();
+        if (!val) {
+            setFieldError(unitInput, 'unit_feedback', 'Please select a unit.');
+            return false;
+        }
+        const allowedUnits = ['Kg', 'Liter', 'Pieces'];
+        if (!allowedUnits.includes(val)) {
+            setFieldError(unitInput, 'unit_feedback', 'Please select a valid unit.');
+            return false;
+        }
+        clearFieldError(unitInput, 'unit_feedback');
+        return true;
+    }
+
+    function validatePrice() {
+        if (!priceInput) return true;
+        const raw = priceInput.value.trim();
+        if (!raw) {
+            setFieldError(priceInput, 'price_per_unit_feedback', 'Starting price is required.');
+            return false;
+        }
+        const num = Number(raw);
+        if (isNaN(num)) {
+            setFieldError(priceInput, 'price_per_unit_feedback', 'Enter a valid starting price.');
+            return false;
+        }
+        if (num < 1) {
+            setFieldError(priceInput, 'price_per_unit_feedback', 'Starting price must be at least 1.');
+            return false;
+        }
+        clearFieldError(priceInput, 'price_per_unit_feedback');
+        return true;
+    }
+
+    function validateImage() {
+        if (!imageInput) return true;
+        const hasExisting = {% if is_edit and product.image %}true{% else %}false{% endif %};
+        const hasFiles = imageInput.files && imageInput.files.length > 0;
+
+        if (!hasFiles) {
+            if (hasExisting) {
+                clearFieldError(imageInput, 'image_feedback');
+                return true;
+            }
+            setFieldError(imageInput, 'image_feedback', 'Please upload a product image.');
+            return false;
+        }
+
+        const file = imageInput.files[0];
+        const fileName = (file.name || '').toLowerCase();
+        const validExtensions = ['.png', '.jpg', '.jpeg'];
+        const matchesExt = validExtensions.some(ext => fileName.endsWith(ext));
+
+        if (!matchesExt) {
+            setFieldError(imageInput, 'image_feedback', 'Only valid PNG, JPG, and JPEG images are allowed.');
+            return false;
+        }
+
+        // Check MIME type if provided by browser
+        if (file.type) {
+            const mime = file.type.toLowerCase();
+            if (mime !== 'image/png' && mime !== 'image/jpeg' && mime !== 'image/jpg') {
+                setFieldError(imageInput, 'image_feedback', 'Only valid PNG, JPG, and JPEG images are allowed.');
+                return false;
+            }
+        }
+
+        clearFieldError(imageInput, 'image_feedback');
+        return true;
+    }
+
+    // Attach real-time input event listeners
+    if (productNameInput) {
+        productNameInput.addEventListener('input', validateProductName);
+        productNameInput.addEventListener('blur', validateProductName);
+    }
+    if (categoryInput) {
+        categoryInput.addEventListener('input', validateCategory);
+        categoryInput.addEventListener('blur', validateCategory);
+    }
+    if (descInput) {
+        descInput.addEventListener('input', validateDescription);
+        descInput.addEventListener('blur', validateDescription);
+    }
+    if (qtyInput) {
+        qtyInput.addEventListener('input', validateQuantity);
+        qtyInput.addEventListener('blur', validateQuantity);
+    }
+    if (unitInput) {
+        unitInput.addEventListener('change', validateUnit);
+        unitInput.addEventListener('blur', validateUnit);
+    }
+    if (priceInput) {
+        priceInput.addEventListener('input', validatePrice);
+        priceInput.addEventListener('blur', validatePrice);
+    }
+    if (imageInput) {
+        imageInput.addEventListener('change', validateImage);
+    }
+
+    // Form submit validation
+    form.addEventListener('submit', function(e) {
+        const v1 = validateProductName();
+        const v2 = validateCategory();
+        const v3 = validateDescription();
+        const v4 = validateQuantity();
+        const v5 = validateUnit();
+        const v6 = validatePrice();
+        const v7 = validateImage();
+
+        const allValid = v1 && v2 && v3 && v4 && v5 && v6 && v7;
+
+        if (!allValid) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const firstInvalid = form.querySelector('.is-invalid');
+            if (firstInvalid) {
+                firstInvalid.focus();
+                firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            return false;
+        }
+
+        // Prevent duplicate submissions
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Saving Product...';
+        }
+    });
+});
+</script>
 {% endblock %}

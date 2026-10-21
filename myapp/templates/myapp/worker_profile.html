@@ -19,7 +19,7 @@
     <div class="row justify-content-center">
         <div class="col-lg-10">
             <div class="profile-card p-4 p-md-5">
-                <form method="post" action="{% url 'worker_profile' %}" novalidate>
+                <form method="post" action="{% url 'worker_profile' %}">
                     {% csrf_token %}
 
                     <h5 class="fw-bold text-success border-bottom pb-3 mb-4">

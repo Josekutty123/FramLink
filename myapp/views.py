@@ -5,6 +5,7 @@ from django.contrib.auth.hashers import make_password, check_password
 from django.utils import timezone
 from django.http import JsonResponse
 from django.db import transaction
+from django.db.models import Q, Max
 from .models import (
     Farmer, Admin, Customer, Worker, Delivery, DeliveryOrder,
     MarketSettings, Product, BargainingBid, FarmerWallet, AdminWallet, Sale,
@@ -205,6 +206,7 @@ def dashboard_view(request):
 
     total_products = Product.objects.filter(farmer=farmer).count()
     sold_products = Product.objects.filter(farmer=farmer, status='SOLD').count()
+    active_policies_count = FarmerPolicyEnrollment.objects.filter(farmer=farmer, status='ACTIVE').count()
 
     market_settings = MarketSettings.get_settings()
     ongoing_products_data = []
@@ -225,6 +227,7 @@ def dashboard_view(request):
         'profile_status': 'Active',
         'total_products': total_products,
         'sold_products': sold_products,
+        'active_policies_count': active_policies_count,
         'ongoing_products_data': ongoing_products_data,
         'market_settings': market_settings,
     }
@@ -428,12 +431,38 @@ def customer_bids_view(request):
         messages.error(request, "Please log in to access your bids.")
         return redirect('customer_login')
 
-    # Get unique products the customer bid on
-    bid_products = Product.objects.filter(bids__customer=customer).distinct().order_by('-created_at')
+    filter_type = request.GET.get('filter', 'all')
+
+    base_qs = Product.objects.filter(bids__customer=customer)
+
+    # Only show products won by this customer (their own results)
+    # and any products currently open for bargaining where this customer has active bids.
+    # Exclude products won by other customers or closed without this customer winning.
+    if filter_type == 'won':
+        bid_products = base_qs.filter(winning_customer=customer)
+    elif filter_type == 'active':
+        bid_products = base_qs.filter(status='AVAILABLE')
+    else:
+        # Default: only customer's own won results and active ongoing bids
+        bid_products = base_qs.filter(
+            Q(winning_customer=customer) | Q(status='AVAILABLE')
+        )
+
+    bid_products = bid_products.annotate(
+        my_highest_bid=Max('bids__bid_price_per_unit', filter=Q(bids__customer=customer))
+    ).distinct().order_by('-created_at')
+
+    won_count = base_qs.filter(winning_customer=customer).distinct().count()
+    active_count = base_qs.filter(status='AVAILABLE').distinct().count()
+    all_count = base_qs.filter(Q(winning_customer=customer) | Q(status='AVAILABLE')).distinct().count()
 
     context = {
         'customer': customer,
         'bid_products': bid_products,
+        'filter_type': filter_type,
+        'won_count': won_count,
+        'active_count': active_count,
+        'all_count': all_count,
     }
     return render(request, 'myapp/customer_bids.html', context)
 
@@ -1181,6 +1210,8 @@ def farmer_add_product_view(request):
             product.save()
             messages.success(request, f"Product '{product.product_name}' created successfully!")
             return redirect('farmer_products')
+        else:
+            messages.error(request, "Please correct the errors below.")
     else:
         form = ProductForm()
 
@@ -1211,6 +1242,8 @@ def farmer_edit_product_view(request, product_id):
             form.save()
             messages.success(request, f"Product '{product.product_name}' updated successfully.")
             return redirect('farmer_products')
+        else:
+            messages.error(request, "Please correct the errors below.")
     else:
         form = ProductForm(instance=product)
 
@@ -1266,7 +1299,11 @@ def farmer_wallet_topup_view(request):
 
     if request.method == 'POST':
         try:
-            amount = Decimal(request.POST.get('amount', '0'))
+            raw_amount = request.POST.get('amount', '').strip()
+            if not raw_amount:
+                messages.error(request, "Please enter a valid amount.")
+                return redirect('farmer_wallet')
+            amount = Decimal(raw_amount)
             if amount <= 0:
                 messages.error(request, "Please enter a valid amount greater than zero.")
                 return redirect('farmer_wallet')
@@ -1463,9 +1500,12 @@ def api_place_bid_view(request, product_id):
         return JsonResponse({'error': 'This product has already been sold.'}, status=400)
 
     try:
-        bid_price = Decimal(request.POST.get('bid_price_per_unit', '0'))
+        raw_bid = request.POST.get('bid_price_per_unit', '').strip()
+        if not raw_bid:
+            return JsonResponse({'error': 'Bid price is required.'}, status=400)
+        bid_price = Decimal(raw_bid)
     except Exception:
-        return JsonResponse({'error': 'Invalid bid price.'}, status=400)
+        return JsonResponse({'error': 'Enter a valid numeric bid price.'}, status=400)
 
     if bid_price <= 0:
         return JsonResponse({'error': 'Bid price must be greater than 0.'}, status=400)
@@ -1627,6 +1667,7 @@ def admin_wage_negotiation_view(request, request_id):
     worker_request = get_object_or_404(WorkerRequest, request_id=request_id)
     offers = worker_request.wage_offers.all().order_by('created_at')
     
+    form = None
     if request.method == 'POST':
         action = request.POST.get('action')
         if action == 'offer':
@@ -1657,7 +1698,8 @@ def admin_wage_negotiation_view(request, request_id):
             messages.success(request, f"Wage accepted: ₹{offer.amount_per_worker_per_day}/day.")
             return redirect('admin_worker_requests')
             
-    form = WorkerWageOfferForm()
+    if form is None:
+        form = WorkerWageOfferForm()
     return render(request, 'myapp/admin_wage_negotiation.html', {
         'admin': admin,
         'worker_request': worker_request,
@@ -1825,6 +1867,7 @@ def farmer_wage_negotiation_view(request, request_id):
     worker_request = get_object_or_404(WorkerRequest, request_id=request_id, farmer=farmer)
     offers = worker_request.wage_offers.all().order_by('created_at')
     
+    form = None
     if request.method == 'POST':
         action = request.POST.get('action')
         if action == 'offer':
@@ -1855,7 +1898,8 @@ def farmer_wage_negotiation_view(request, request_id):
             messages.success(request, f"Wage accepted: ₹{offer.amount_per_worker_per_day}/day.")
             return redirect('farmer_worker_requests')
             
-    form = WorkerWageOfferForm()
+    if form is None:
+        form = WorkerWageOfferForm()
     return render(request, 'myapp/farmer_wage_negotiation.html', {
         'farmer': farmer,
         'worker_request': worker_request,
@@ -2111,9 +2155,13 @@ def farmer_purchase_supply_view(request, supply_id):
     
     if request.method == 'POST':
         try:
-            quantity = int(request.POST.get('quantity', 0))
+            raw_qty = request.POST.get('quantity', '').strip()
+            if not raw_qty:
+                messages.error(request, "Please enter a valid quantity.")
+                return redirect('farmer_buy_supplies')
+            quantity = int(raw_qty)
             if quantity <= 0:
-                messages.error(request, "Invalid quantity.")
+                messages.error(request, "Quantity must be at least 1.")
                 return redirect('farmer_buy_supplies')
                 
             if quantity > supply.available_quantity:
@@ -2355,6 +2403,16 @@ def officer_enrollments_view(request):
     enrollments = FarmerPolicyEnrollment.objects.all().order_by('-enrolled_at')
     return render(request, 'myapp/officer_enrollments.html', {'enrollments': enrollments, 'officer': officer})
 
+def officer_delete_enrollment_view(request, enrollment_id):
+    officer = get_current_officer(request)
+    if not officer:
+        return redirect('officer_login')
+    
+    enrollment = get_object_or_404(FarmerPolicyEnrollment, enrollment_id=enrollment_id)
+    enrollment.delete()
+    messages.success(request, f"Enrollment {enrollment_id} has been deleted successfully.")
+    return redirect('officer_enrollments')
+
 def officer_premiums_view(request):
     officer = get_current_officer(request)
     if not officer:
@@ -2424,8 +2482,8 @@ def officer_settle_claim_view(request, claim_id):
         
     claim = get_object_or_404(InsuranceClaim, claim_id=claim_id, status='SETTLEMENT_PENDING')
     if request.method == 'POST':
-        settlement_method = request.POST.get('payment_method', 'BANK_TRANSFER')
-        reference = request.POST.get('transaction_reference', f'SIM-{claim.claim_id}')
+        settlement_method = (request.POST.get('payment_method') or '').strip() or 'BANK_TRANSFER'
+        reference = (request.POST.get('transaction_reference') or '').strip() or f'SIM-{claim.claim_id}'
         
         with transaction.atomic():
             settlement = ClaimSettlement.objects.create(
@@ -2771,6 +2829,8 @@ def farmer_apply_claim_view(request):
                 return redirect('farmer_my_claims')
             except FarmerPolicyEnrollment.DoesNotExist:
                 messages.error(request, "Invalid policy selected.")
+        elif not enrollment_id:
+            messages.error(request, "Please choose an enrolled active insurance policy.")
     else:
         form = InsuranceClaimForm()
         

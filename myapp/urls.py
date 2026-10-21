@@ -128,6 +128,7 @@ urlpatterns = [
     path('officer/policies/edit/<str:policy_id>/', views.officer_edit_policy_view, name='officer_edit_policy'),
     path('officer/policies/toggle/<str:policy_id>/', views.officer_toggle_policy_view, name='officer_toggle_policy'),
     path('officer/enrollments/', views.officer_enrollments_view, name='officer_enrollments'),
+    path('officer/enrollments/delete/<str:enrollment_id>/', views.officer_delete_enrollment_view, name='officer_delete_enrollment'),
     path('officer/premiums/', views.officer_premiums_view, name='officer_premiums'),
     path('officer/claims/', views.officer_claims_view, name='officer_claims'),
     path('officer/claims/<str:claim_id>/', views.officer_claim_detail_view, name='officer_claim_detail'),
