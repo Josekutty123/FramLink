@@ -8,45 +8,67 @@
             <div class="alert alert-{{ message.tags }}">{{ message }}</div>
         {% endfor %}
     {% endif %}
-    <div class="card shadow-sm">
+    <div class="card shadow-sm border-0 rounded-4">
         <div class="card-body">
-            <table class="table table-hover">
-                <thead>
-                    <tr>
-                        <th>Settlement ID</th>
-                        <th>Farmer</th>
-                        <th>Worker</th>
-                        <th>Amount</th>
-                        <th>Status</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for settlement in settlements %}
-                    <tr>
-                        <td>{{ settlement.settlement_id }}</td>
-                        <td>{{ settlement.farmer.full_name }}</td>
-                        <td>{{ settlement.worker.full_name }}</td>
-                        <td>₹{{ settlement.individual_salary }}</td>
-                        <td>
-                            <span class="badge bg-{% if settlement.payment_status == 'PAID' %}success{% elif settlement.payment_status == 'PAID_TO_ADMIN' %}info{% else %}warning{% endif %}">
-                                {{ settlement.payment_status }}
-                            </span>
-                        </td>
-                        <td>
-                            {% if settlement.payment_status == 'PAID_TO_ADMIN' %}
-                            <form method="post" action="{% url 'admin_pay_worker' settlement.settlement_id %}" style="display:inline;">
-                                {% csrf_token %}
-                                <button type="submit" class="btn btn-sm btn-success">Pay Worker</button>
-                            </form>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr><td colspan="6" class="text-center">No settlements found.</td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Settlement ID</th>
+                            <th>Farmer</th>
+                            <th>Worker</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for settlement in settlements %}
+                        <tr>
+                            <td class="fw-bold">{{ settlement.settlement_id }}</td>
+                            <td>
+                                <div class="fw-medium">{{ settlement.farmer.full_name }}</div>
+                                <small class="text-muted"><i class="bi bi-telephone"></i> {{ settlement.farmer.phone }}</small>
+                            </td>
+                            <td>
+                                <div class="fw-medium">{{ settlement.worker.full_name }}</div>
+                                <small class="text-muted"><i class="bi bi-telephone"></i> {{ settlement.worker.phone }}</small>
+                            </td>
+                            <td class="text-success fw-bold fs-6">₹{{ settlement.individual_salary }}</td>
+                            <td>
+                                {% if settlement.payment_status == 'PAID' %}
+                                    <span class="badge bg-success">PAID</span>
+                                {% elif settlement.payment_status == 'PAID_TO_ADMIN' %}
+                                    <span class="badge bg-info text-dark">PAID TO ADMIN</span>
+                                {% else %}
+                                    <span class="badge bg-warning text-dark">PAYMENT PENDING</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if settlement.payment_status == 'PAID_TO_ADMIN' %}
+                                    <form method="post" action="{% url 'admin_pay_worker' settlement.settlement_id %}" class="d-inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-success text-white shadow-sm" onclick="return confirm('Disburse ₹{{ settlement.individual_salary }} to {{ settlement.worker.full_name }}?');">
+                                            <i class="bi bi-cash-stack me-1"></i> Pay Worker
+                                        </button>
+                                    </form>
+                                {% elif settlement.payment_status == 'PAYMENT_PENDING' %}
+                                    <span class="badge bg-light text-warning border py-2 px-2" title="Waiting for farmer to complete payment to admin wallet">
+                                        <i class="bi bi-hourglass-split me-1"></i> Awaiting Farmer
+                                    </span>
+                                {% elif settlement.payment_status == 'PAID' %}
+                                    <span class="badge bg-success-subtle text-success border border-success py-2 px-2" title="Worker paid on {{ settlement.paid_date|date:'d M Y H:i' }}">
+                                        <i class="bi bi-check-circle-fill me-1"></i> Disbursed
+                                    </span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="6" class="text-center py-4 text-muted">No settlements found.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>

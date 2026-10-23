@@ -13,38 +13,68 @@
     {% endif %}
     <div class="card shadow-sm border-0 rounded-4">
         <div class="card-body">
-            <table class="table table-hover">
-                <thead>
-                    <tr>
-                        <th>Request ID</th>
-                        <th>Workers</th>
-                        <th>Work</th>
-                        <th>Duration</th>
-                        <th>Status</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for req in requests %}
-                    <tr>
-                        <td>{{ req.request_id }}</td>
-                        <td>{{ req.num_workers }}</td>
-                        <td>{{ req.work_description|truncatechars:30 }}</td>
-                        <td>{{ req.duration_days }} days</td>
-                        <td><span class="badge bg-secondary">{{ req.status }}</span></td>
-                        <td>
-                            {% if req.status == 'PENDING' or req.status == 'WAGE_NEGOTIATION' %}
-                            <a href="{% url 'farmer_wage_negotiation' req.request_id %}" class="btn btn-sm btn-info">Negotiate Wage</a>
-                            {% elif req.status == 'WORKERS_ASSIGNED' %}
-                            <a href="{% url 'farmer_create_task' req.request_id %}" class="btn btn-sm btn-primary">Create Task</a>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr><td colspan="6" class="text-center">No worker requests found.</td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Request ID</th>
+                            <th>Workers</th>
+                            <th>Work</th>
+                            <th>Duration</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for req in requests %}
+                        <tr>
+                            <td class="fw-bold">{{ req.request_id }}</td>
+                            <td>{{ req.num_workers }}</td>
+                            <td>{{ req.work_description|truncatechars:30 }}</td>
+                            <td>{{ req.duration_days }} days</td>
+                            <td>
+                                {% if req.status == 'COMPLETED' %}
+                                    <span class="badge bg-success">COMPLETED</span>
+                                {% elif req.status == 'PENDING' %}
+                                    <span class="badge bg-warning text-dark">PENDING</span>
+                                {% elif req.status == 'WAGE_NEGOTIATION' %}
+                                    <span class="badge bg-info text-dark">WAGE NEGOTIATION</span>
+                                {% elif req.status == 'WAGE_AGREED' %}
+                                    <span class="badge bg-primary">WAGE AGREED</span>
+                                {% elif req.status == 'WORKERS_ASSIGNED' %}
+                                    <span class="badge bg-secondary">WORKERS ASSIGNED</span>
+                                {% elif req.status == 'TASK_CREATED' %}
+                                    <span class="badge bg-primary">TASK CREATED</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ req.status }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if req.status == 'PENDING' or req.status == 'WAGE_NEGOTIATION' %}
+                                    <a href="{% url 'farmer_wage_negotiation' req.request_id %}" class="btn btn-sm btn-info text-white shadow-sm">
+                                        <i class="bi bi-chat-dots me-1"></i> Negotiate Wage
+                                    </a>
+                                {% elif req.status == 'WAGE_AGREED' %}
+                                    <span class="badge bg-light text-muted border py-2 px-2" title="Waiting for admin to assign workers">
+                                        <i class="bi bi-hourglass-split me-1"></i> Awaiting Assignment
+                                    </span>
+                                {% elif req.status == 'WORKERS_ASSIGNED' %}
+                                    <a href="{% url 'farmer_create_task' req.request_id %}" class="btn btn-sm btn-primary shadow-sm">
+                                        <i class="bi bi-play-circle me-1"></i> Create Task
+                                    </a>
+                                {% elif req.status == 'TASK_CREATED' or req.status == 'COMPLETED' %}
+                                    <a href="{% url 'farmer_tasks' %}" class="btn btn-sm btn-outline-success shadow-sm" title="View Task & Payment Status">
+                                        <i class="bi bi-list-task me-1"></i> View Task
+                                    </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="6" class="text-center py-4 text-muted">No worker requests found.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
