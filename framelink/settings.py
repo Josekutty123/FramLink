@@ -14,10 +14,11 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 
-load_dotenv()
-
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Load environment variables from .env file in BASE_DIR
+load_dotenv(BASE_DIR / '.env')
 
 
 # Quick-start development settings - unsuitable for production
@@ -44,13 +45,29 @@ else:
 # CSRF_TRUSTED_ORIGINS configuration for HTTPS deployment
 csrf_trusted_env = os.getenv('CSRF_TRUSTED_ORIGINS')
 if csrf_trusted_env:
-    CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in csrf_trusted_env.split(',') if origin.strip()]
+    origins = []
+    for origin in csrf_trusted_env.split(','):
+        origin = origin.strip()
+        if origin:
+            if not origin.startswith(('http://', 'https://')):
+                origin = f'https://{origin}'
+            origins.append(origin)
+    CSRF_TRUSTED_ORIGINS = origins
 else:
     CSRF_TRUSTED_ORIGINS = [
         'https://*.onrender.com',
         'http://localhost',
         'http://127.0.0.1',
     ]
+
+# Automatically support Render's default hostname variable if provided
+render_host = os.getenv('RENDER_EXTERNAL_HOSTNAME')
+if render_host:
+    if render_host not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append(render_host)
+    render_origin = f'https://{render_host}'
+    if render_origin not in CSRF_TRUSTED_ORIGINS:
+        CSRF_TRUSTED_ORIGINS.append(render_origin)
 
 # Application definition
 
@@ -108,30 +125,45 @@ db_options = {
 # SSL configuration for external cloud MySQL providers (e.g. Aiven)
 db_ssl_ca = os.getenv('DB_SSL_CA')
 if db_ssl_ca:
+    # Resolve relative path if needed
+    if not os.path.isabs(db_ssl_ca) and (BASE_DIR / db_ssl_ca).exists():
+        db_ssl_ca = str(BASE_DIR / db_ssl_ca)
     db_options['ssl'] = {'ca': db_ssl_ca}
+elif (BASE_DIR / 'ca.pem').exists() and os.getenv('DB_HOST') and 'aivencloud.com' in os.getenv('DB_HOST', ''):
+    db_options['ssl'] = {'ca': str(BASE_DIR / 'ca.pem')}
 elif os.getenv('DB_SSL_REQUIRE', 'False').lower() in ('true', '1', 't', 'yes'):
     import certifi
     db_options['ssl'] = {'ca': certifi.where()}
 
 database_url = os.getenv('DATABASE_URL')
+parsed_db = {}
 if database_url:
-    DATABASES = {
-        'default': dj_database_url.parse(database_url, engine='django.db.backends.mysql')
+    parsed_db = dj_database_url.parse(database_url, engine='django.db.backends.mysql')
+    # Filter out unsupported connection options if passed via URL query params (e.g. Aiven's ?ssl-mode=REQUIRED)
+    if 'OPTIONS' in parsed_db:
+        parsed_db['OPTIONS'].pop('ssl-mode', None)
+        parsed_db['OPTIONS'].pop('ssl_mode', None)
+
+# Individual DB_* variables have precedence over DATABASE_URL to avoid silent overriding
+db_name = os.getenv('DB_NAME') or parsed_db.get('NAME') or 'framlinkerp'
+db_user = os.getenv('DB_USER') or parsed_db.get('USER') or 'jose'
+db_password = os.getenv('DB_PASSWORD') or parsed_db.get('PASSWORD') or 'jose'
+db_host = os.getenv('DB_HOST') or parsed_db.get('HOST') or 'localhost'
+db_port = os.getenv('DB_PORT') or str(parsed_db.get('PORT') or '3306')
+
+combined_options = {**parsed_db.get('OPTIONS', {}), **db_options}
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': db_name,
+        'USER': db_user,
+        'PASSWORD': db_password,
+        'HOST': db_host,
+        'PORT': db_port,
+        'OPTIONS': combined_options,
     }
-    DATABASES['default'].setdefault('OPTIONS', {})
-    DATABASES['default']['OPTIONS'].update(db_options)
-else:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.mysql',
-            'NAME': os.getenv('DB_NAME', 'framlinkerp'),
-            'USER': os.getenv('DB_USER', 'jose'),
-            'PASSWORD': os.getenv('DB_PASSWORD', 'jose'),
-            'HOST': os.getenv('DB_HOST', 'localhost'),
-            'PORT': os.getenv('DB_PORT', '3306'),
-            'OPTIONS': db_options,
-        }
-    }
+}
 
 
 # Password validation

@@ -13,6 +13,12 @@ venv.bak/
 # Environment
 .env
 
+# Certificates & Keys
+ca.pem
+*.pem
+*.key
+*.crt
+
 # Node
 node_modules/
 
