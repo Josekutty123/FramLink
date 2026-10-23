@@ -23,14 +23,34 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-default-key-fallback')
+# Read DEBUG from environment variable, default to False in production
+DEBUG = os.getenv('DEBUG', 'False').lower() in ('true', '1', 't', 'yes')
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# Read SECRET_KEY from environment variable
+SECRET_KEY = os.getenv('SECRET_KEY')
+if not SECRET_KEY:
+    if DEBUG:
+        SECRET_KEY = 'django-insecure-default-key-fallback'
+    else:
+        raise ValueError("The SECRET_KEY environment variable must be set in production!")
 
-ALLOWED_HOSTS = ['*']
+# ALLOWED_HOSTS configuration
+allowed_hosts_env = os.getenv('ALLOWED_HOSTS')
+if allowed_hosts_env:
+    ALLOWED_HOSTS = [h.strip() for h in allowed_hosts_env.split(',') if h.strip()]
+else:
+    ALLOWED_HOSTS = ['localhost', '127.0.0.1', '.onrender.com'] if not DEBUG else ['*']
 
+# CSRF_TRUSTED_ORIGINS configuration for HTTPS deployment
+csrf_trusted_env = os.getenv('CSRF_TRUSTED_ORIGINS')
+if csrf_trusted_env:
+    CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in csrf_trusted_env.split(',') if origin.strip()]
+else:
+    CSRF_TRUSTED_ORIGINS = [
+        'https://*.onrender.com',
+        'http://localhost',
+        'http://127.0.0.1',
+    ]
 
 # Application definition
 
@@ -46,6 +66,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -77,19 +98,40 @@ WSGI_APPLICATION = 'framelink.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': os.getenv('DB_NAME', 'framlinkerp'),
-        'USER': os.getenv('DB_USER', 'jose'),
-        'PASSWORD': os.getenv('DB_PASSWORD', 'jose'),
-        'HOST': os.getenv('DB_HOST', 'localhost'),
-        'PORT': os.getenv('DB_PORT', '3306'),
-        'OPTIONS': {
-            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-        },
-    }
+import dj_database_url
+
+db_options = {
+    'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+    'charset': 'utf8mb4',
 }
+
+# SSL configuration for external cloud MySQL providers (e.g. Aiven)
+db_ssl_ca = os.getenv('DB_SSL_CA')
+if db_ssl_ca:
+    db_options['ssl'] = {'ca': db_ssl_ca}
+elif os.getenv('DB_SSL_REQUIRE', 'False').lower() in ('true', '1', 't', 'yes'):
+    import certifi
+    db_options['ssl'] = {'ca': certifi.where()}
+
+database_url = os.getenv('DATABASE_URL')
+if database_url:
+    DATABASES = {
+        'default': dj_database_url.parse(database_url, engine='django.db.backends.mysql')
+    }
+    DATABASES['default'].setdefault('OPTIONS', {})
+    DATABASES['default']['OPTIONS'].update(db_options)
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': os.getenv('DB_NAME', 'framlinkerp'),
+            'USER': os.getenv('DB_USER', 'jose'),
+            'PASSWORD': os.getenv('DB_PASSWORD', 'jose'),
+            'HOST': os.getenv('DB_HOST', 'localhost'),
+            'PORT': os.getenv('DB_PORT', '3306'),
+            'OPTIONS': db_options,
+        }
+    }
 
 
 # Password validation
@@ -130,8 +172,28 @@ STATIC_URL = 'static/'
 STATICFILES_DIRS = [
     BASE_DIR / 'myapp' / 'static',
 ]
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+# WhiteNoise storage to compress and serve static files efficiently
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
+    },
+}
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+# Production Security Settings (active when DEBUG=False)
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_SSL_REDIRECT = os.getenv('SECURE_SSL_REDIRECT', 'True').lower() in ('true', '1', 't', 'yes')
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
 
 

@@ -187,8 +187,9 @@ def get_ai_response(user_message, history=None):
     max_retries = 3
     for attempt in range(max_retries + 1):
         try:
+            model_name = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
             chat = client.chats.create(
-                model="gemini-3.8-flash",
+                model=model_name,
                 config=types.GenerateContentConfig(
                     system_instruction=SYSTEM_INSTRUCTION,
                 ),
