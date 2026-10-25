@@ -14,13 +14,13 @@
             <p class="text-muted mb-0">Control agricultural market status, operating hours, and monitor live trading.</p>
         </div>
         <div class="d-flex gap-2 align-items-center mt-3 mt-md-0">
-            <span class="badge bg-secondary fs-6 px-3 py-2 rounded-pill shadow-sm">
+            <span class="badge {% if market_settings.status == 'OPEN' %}bg-success{% else %}bg-secondary{% endif %} fs-6 px-3 py-2 rounded-pill shadow-sm">
                 Market: {{ market_settings.status }}
             </span>
-            <span class="badge bg-secondary fs-6 px-3 py-2 rounded-pill shadow-sm">
-                Registration: {{ market_settings.product_registration_status }}
+            <span class="badge {% if market_settings.product_registration_status == 'OPEN' %}bg-success{% else %}bg-danger{% endif %} fs-6 px-3 py-2 rounded-pill shadow-sm">
+                Product Adding: {{ market_settings.product_registration_status }}
             </span>
-            <span class="badge bg-secondary fs-6 px-3 py-2 rounded-pill shadow-sm">
+            <span class="badge {% if market_settings.bargaining_status == 'ACTIVE' %}bg-info{% elif market_settings.bargaining_status == 'STOPPED' %}bg-danger{% else %}bg-secondary{% endif %} fs-6 px-3 py-2 rounded-pill shadow-sm">
                 Bargaining: {{ market_settings.bargaining_status }}
             </span>
         </div>
@@ -69,15 +69,24 @@
                     <div class="d-flex flex-column gap-2 mt-4">
                         {% if market_settings.status == 'CLOSED' %}
                             <a href="{% url 'admin_market_action' 'open_market' %}" class="btn btn-success w-100 fw-bold rounded-3 py-3 shadow">
-                                <i class="bi bi-unlock-fill me-1"></i> Open Market <small class="d-block fw-normal">(Farmers can start adding products)</small>
+                                <i class="bi bi-unlock-fill me-1"></i> Open Market <small class="d-block fw-normal">(Allows farmers to start adding products)</small>
                             </a>
                         {% elif market_settings.status == 'OPEN' and market_settings.bargaining_status == 'NOT_STARTED' %}
                             <a href="{% url 'admin_market_action' 'open_bargaining' %}" class="btn btn-info w-100 fw-bold rounded-3 py-3 shadow">
                                 <i class="bi bi-play-circle-fill me-1"></i> Open Bargaining <small class="d-block fw-normal">(Closes product registration and starts bidding)</small>
                             </a>
+                            {% if market_settings.product_registration_status == 'OPEN' %}
+                                <a href="{% url 'admin_market_action' 'close_registration' %}" class="btn btn-warning w-100 fw-bold rounded-3 py-2 shadow-sm text-dark">
+                                    <i class="bi bi-pause-circle-fill me-1"></i> Stop Product Adding <small class="d-block fw-normal">(Farmers can no longer add, edit, or delete)</small>
+                                </a>
+                            {% else %}
+                                <a href="{% url 'admin_market_action' 'open_registration' %}" class="btn btn-outline-light w-100 fw-bold rounded-3 py-2 shadow-sm">
+                                    <i class="bi bi-arrow-repeat me-1"></i> Reopen Product Adding <small class="d-block fw-normal">(Allow farmers to add products again)</small>
+                                </a>
+                            {% endif %}
                         {% elif market_settings.bargaining_status == 'ACTIVE' %}
-                            <a href="{% url 'admin_market_action' 'stop_bargaining' %}" class="btn btn-danger w-100 fw-bold rounded-3 py-3 shadow" onclick="return confirm('Are you sure you want to stop bargaining? This will automatically sell all products to the highest bidders and close the market.');">
-                                <i class="bi bi-stop-circle-fill me-1"></i> Stop Bargaining & Close Market <small class="d-block fw-normal">(Finalizes sales and ends the market cycle)</small>
+                            <a href="{% url 'admin_market_action' 'stop_bargaining' %}" class="btn btn-danger w-100 fw-bold rounded-3 py-3 shadow" onclick="return confirm('Are you sure you want to stop bargaining? This will automatically sell all products to the highest bidders, mark products without bids as UNSOLD, and close the market.');">
+                                <i class="bi bi-stop-circle-fill me-1"></i> Stop Bargaining & Close Market <small class="d-block fw-normal">(Finalizes sales and marks unsold items)</small>
                             </a>
                         {% endif %}
                     </div>
@@ -103,14 +112,18 @@
                                 {{ form.status }}
                             </div>
                             <div class="col-md-6">
+                                <label class="form-label fw-semibold text-secondary">Product Adding Status</label>
+                                {{ form.product_registration_status }}
+                            </div>
+                            <div class="col-md-4">
                                 <label class="form-label fw-semibold text-secondary">Current Market Date</label>
                                 {{ form.market_date }}
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <label class="form-label fw-semibold text-secondary">Opening Time</label>
                                 {{ form.opening_time }}
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <label class="form-label fw-semibold text-secondary">Closing Time</label>
                                 {{ form.closing_time }}
                             </div>
@@ -166,14 +179,26 @@
                                     <td>
                                         {% if p.status == 'AVAILABLE' %}
                                             <span class="badge bg-success rounded-pill px-3">AVAILABLE</span>
+                                        {% elif p.status == 'UNSOLD' %}
+                                            <span class="badge bg-danger rounded-pill px-3">UNSOLD</span>
                                         {% else %}
                                             <span class="badge bg-secondary rounded-pill px-3">SOLD</span>
                                         {% endif %}
                                     </td>
                                     <td>
-                                        <a href="{% url 'live_bargaining' p.product_id %}" class="btn btn-sm btn-outline-success rounded-pill px-3">
-                                            <i class="bi bi-eye-fill me-1"></i> Monitor Room
-                                        </a>
+                                        <div class="d-flex gap-2">
+                                            <a href="{% url 'live_bargaining' p.product_id %}" class="btn btn-sm btn-outline-success rounded-pill px-3">
+                                                <i class="bi bi-eye-fill me-1"></i> Monitor Room
+                                            </a>
+                                            {% if p.status == 'AVAILABLE' %}
+                                                <a href="{% url 'admin_close_product_bargaining' p.product_id %}" 
+                                                   class="btn btn-sm btn-outline-danger rounded-pill px-2"
+                                                   title="Close Bargaining for this Product"
+                                                   onclick="return confirm('Are you sure you want to close bargaining for this product? If no bids, it will be marked as UNSOLD.');">
+                                                    <i class="bi bi-stop-circle"></i> Close
+                                                </a>
+                                            {% endif %}
+                                        </div>
                                     </td>
                                 </tr>
                             {% endfor %}

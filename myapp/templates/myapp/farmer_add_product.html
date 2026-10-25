@@ -18,14 +18,18 @@
         </a>
     </div>
 
-    <!-- Market Closed Warning Notice -->
-    {% if market_settings.status != 'OPEN' and not is_edit %}
+    <!-- Market / Registration Closed Warning Notice -->
+    {% if market_settings.status != 'OPEN' or market_settings.product_registration_status != 'OPEN' %}
         <div class="card border-danger shadow-sm rounded-4 mb-4">
             <div class="card-body p-4 text-center">
                 <i class="bi bi-lock-fill text-danger display-4 mb-3 d-block"></i>
-                <h4 class="fw-bold text-danger mb-2">Marketplace Closed</h4>
+                <h4 class="fw-bold text-danger mb-2">Product Registration Closed</h4>
                 <p class="text-secondary fs-5 mb-3">
-                    The marketplace is currently closed.<br>Please wait until the Administrator opens the market.
+                    {% if market_settings.status != 'OPEN' %}
+                        The marketplace is currently closed.<br>Please wait until the Administrator opens the market.
+                    {% else %}
+                        The Administrator has stopped product registration for this cycle.<br>Products can no longer be added or edited.
+                    {% endif %}
                 </p>
                 <a href="{% url 'farmer_products' %}" class="btn btn-outline-danger rounded-pill px-4">
                     <i class="bi bi-arrow-left me-1"></i> Return to Products

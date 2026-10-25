@@ -62,6 +62,7 @@ urlpatterns = [
     # Marketplace Module URLs
     path('admin/marketplace/', views.admin_marketplace_view, name='admin_marketplace'),
     path('admin/marketplace/action/<str:action>/', views.admin_market_action_view, name='admin_market_action'),
+    path('admin/marketplace/close-product/<str:product_id>/', views.admin_close_product_bargaining_view, name='admin_close_product_bargaining'),
     path('admin/wallet/', views.admin_wallet_view, name='admin_wallet'),
     path('admin/sales/', views.admin_sales_history_view, name='admin_sales_history'),
     path('admin/sales/<str:sale_id>/', views.admin_sale_details_view, name='admin_sale_details'),

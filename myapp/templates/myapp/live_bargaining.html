@@ -40,8 +40,12 @@
                                 <span class="badge bg-success px-3 py-2 rounded-pill fs-6 shadow-sm">
                                     <i class="bi bi-record-fill text-warning me-1 animate-pulse"></i> LIVE BARGAINING ACTIVE
                                 </span>
-                            {% else %}
+                            {% elif product.status == 'UNSOLD' %}
                                 <span class="badge bg-danger px-3 py-2 rounded-pill fs-6 shadow-sm">
+                                    <i class="bi bi-x-circle-fill me-1"></i> UNSOLD
+                                </span>
+                            {% else %}
+                                <span class="badge bg-secondary px-3 py-2 rounded-pill fs-6 shadow-sm">
                                     <i class="bi bi-check-circle-fill me-1"></i> SOLD
                                 </span>
                             {% endif %}
@@ -155,10 +159,17 @@
                 </div>
             {% elif is_admin %}
                 <div class="card border-0 shadow-sm rounded-4 bg-light" id="admin-monitor-box">
-                    <div class="card-body p-4 text-center text-muted">
+                    <div class="card-body p-4 text-center">
                         <i class="bi bi-eye-fill fs-2 mb-2 d-block text-success"></i>
                         <h6 class="fw-bold text-dark">Administrator Monitoring Mode</h6>
-                        <p class="small mb-0">You are monitoring live bids for Product {{ product.product_id }}.</p>
+                        <p class="small text-muted mb-3">You are monitoring live bids for Product {{ product.product_id }}.</p>
+                        {% if product.status == 'AVAILABLE' %}
+                            <a href="{% url 'admin_close_product_bargaining' product.product_id %}" 
+                               class="btn btn-danger rounded-pill px-4 shadow-sm"
+                               onclick="return confirm('Are you sure you want to close bargaining for this product? If no bids were placed, it will be marked as UNSOLD.');">
+                                <i class="bi bi-stop-circle-fill me-1"></i> Close Bargaining for this Product
+                            </a>
+                        {% endif %}
                     </div>
                 </div>
             {% elif product.status == 'SOLD' %}
@@ -180,11 +191,11 @@
                     </div>
                 </div>
             {% elif product.status == 'UNSOLD' %}
-                <div class="card border-0 shadow-sm rounded-4 border-start border-4 border-danger bg-light">
+                <div class="card border-0 shadow-sm rounded-4 border-start border-4 border-danger bg-light" id="bargaining-completed-box">
                     <div class="card-body p-4 text-center">
                         <h4 class="fw-bold text-danger mb-3"><i class="bi bi-x-circle-fill me-2"></i> Product Unsold</h4>
                         <p class="text-dark mb-0 fw-semibold fs-6">
-                            Bargaining was closed before the product was sold. The product has been removed from the market.
+                            Bargaining was closed before the product was sold. No bids were placed, so the product was marked as UNSOLD.
                         </p>
                     </div>
                 </div>

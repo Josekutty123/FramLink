@@ -489,9 +489,10 @@ class DeliveryProfileForm(RegistrationValidationMixin, forms.ModelForm):
 class MarketSettingsForm(forms.ModelForm):
     class Meta:
         model = MarketSettings
-        fields = ['status', 'market_date', 'opening_time', 'closing_time']
+        fields = ['status', 'product_registration_status', 'market_date', 'opening_time', 'closing_time']
         widgets = {
             'status': forms.Select(attrs={'class': 'form-select fw-bold', 'required': 'required'}),
+            'product_registration_status': forms.Select(attrs={'class': 'form-select fw-bold', 'required': 'required'}),
             'market_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date', 'required': 'required'}),
             'opening_time': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time', 'required': 'required'}),
             'closing_time': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time', 'required': 'required'}),

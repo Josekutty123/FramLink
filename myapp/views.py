@@ -1013,7 +1013,20 @@ def admin_marketplace_view(request):
     if request.method == 'POST':
         form = MarketSettingsForm(request.POST, instance=market_settings)
         if form.is_valid():
-            form.save()
+            prev_status = market_settings.status
+            settings_obj = form.save()
+            if settings_obj.status == 'CLOSED':
+                settings_obj.product_registration_status = 'CLOSED'
+                settings_obj.save()
+                if prev_status == 'OPEN':
+                    available_products = Product.objects.filter(status='AVAILABLE')
+                    for product in available_products:
+                        highest_bid = BargainingBid.objects.filter(product=product, status__in=['ACTIVE', 'ACCEPTED']).order_by('-bid_price_per_unit', '-created_at').first()
+                        if highest_bid:
+                            _process_sale(product, highest_bid)
+                        else:
+                            product.status = 'UNSOLD'
+                            product.save()
             messages.success(request, f"Market settings updated successfully. Status is now {market_settings.status}.")
             return redirect('admin_marketplace')
     else:
@@ -1104,46 +1117,83 @@ def admin_market_action_view(request, action):
         market_settings.status = 'OPEN'
         market_settings.product_registration_status = 'OPEN'
         market_settings.bargaining_status = 'NOT_STARTED'
-        messages.success(request, "Market opened successfully. Farmers can now add products.")
+        messages.success(request, "Market opened successfully. Farmers can now add, edit, and delete products.")
     elif action == 'close_registration':
         market_settings.product_registration_status = 'CLOSED'
-        messages.success(request, "Product registration closed. Farmers can no longer add products.")
+        messages.success(request, "Product adding stopped. Farmers can no longer add, edit, or delete products.")
+    elif action == 'open_registration':
+        market_settings.product_registration_status = 'OPEN'
+        messages.success(request, "Product adding reopened. Farmers can now add, edit, and delete products.")
     elif action == 'open_bargaining':
         market_settings.bargaining_status = 'ACTIVE'
         market_settings.product_registration_status = 'CLOSED'
-        messages.success(request, "Live bargaining has been opened. Product registration is now closed, and customers can now place bids.")
+        messages.success(request, "Live bargaining has been opened. Product adding is now closed, and customers can now place bids.")
     elif action == 'stop_bargaining':
         market_settings.status = 'CLOSED'
         market_settings.product_registration_status = 'CLOSED'
         market_settings.bargaining_status = 'STOPPED'
         available_products = Product.objects.filter(status='AVAILABLE')
         for product in available_products:
-            highest_bid = BargainingBid.objects.filter(product=product).order_by('-bid_price_per_unit', '-created_at').first()
+            highest_bid = BargainingBid.objects.filter(product=product, status__in=['ACTIVE', 'ACCEPTED']).order_by('-bid_price_per_unit', '-created_at').first()
             if highest_bid:
                 _process_sale(product, highest_bid)
             else:
                 product.status = 'UNSOLD'
                 product.save()
-        messages.success(request, "Live bargaining has been stopped. Products with bids were sold, and unsold products were removed.")
+        messages.success(request, "Live bargaining has been stopped. Products with bids were sold, and products without bids were marked as UNSOLD.")
     elif action == 'close_market':
         market_settings.status = 'CLOSED'
         market_settings.product_registration_status = 'CLOSED'
         market_settings.bargaining_status = 'NOT_STARTED'
         available_products = Product.objects.filter(status='AVAILABLE')
         for product in available_products:
-            highest_bid = BargainingBid.objects.filter(product=product).order_by('-bid_price_per_unit', '-created_at').first()
+            highest_bid = BargainingBid.objects.filter(product=product, status__in=['ACTIVE', 'ACCEPTED']).order_by('-bid_price_per_unit', '-created_at').first()
             if highest_bid:
                 _process_sale(product, highest_bid)
             else:
                 product.status = 'UNSOLD'
                 product.save()
-        messages.success(request, "Market is completely closed. Products with bids were sold, and unsold products were removed.")
+        messages.success(request, "Market is completely closed. Products with bids were sold, and products without bids were marked as UNSOLD.")
     else:
         messages.error(request, "Invalid market action.")
         return redirect('admin_marketplace')
 
     market_settings.save()
     return redirect('admin_marketplace')
+
+
+def admin_close_product_bargaining_view(request, product_id):
+    active_redirect = get_active_session_redirect(request)
+    if active_redirect and not request.session.get('admin_id'):
+        messages.error(request, "Only Administrator can close bargaining.")
+        return active_redirect
+
+    admin = get_current_admin(request)
+    if not admin:
+        messages.error(request, "Please log in as Administrator.")
+        return redirect('admin_login')
+
+    product = get_object_or_404(Product, product_id=product_id)
+    if product.status != 'AVAILABLE':
+        messages.info(request, f"Product {product.product_id} is already marked as {product.status}.")
+        return redirect('live_bargaining', product_id=product.product_id)
+
+    highest_bid = BargainingBid.objects.filter(product=product, status__in=['ACTIVE', 'ACCEPTED']).order_by('-bid_price_per_unit', '-created_at').first()
+    if highest_bid:
+        _process_sale(product, highest_bid)
+        bidder_name = highest_bid.customer.full_name if highest_bid.customer else (highest_bid.farmer_bidder.full_name if highest_bid.farmer_bidder else "Buyer")
+        messages.success(request, f"Bargaining closed for '{product.product_name}'. Sold to {bidder_name} at ₹{highest_bid.bid_price_per_unit}/{product.unit}.")
+    else:
+        product.status = 'UNSOLD'
+        product.save()
+        messages.warning(request, f"Bargaining closed for '{product.product_name}'. No bids were placed; product marked as UNSOLD.")
+
+    referer = request.META.get('HTTP_REFERER', '')
+    if 'live-rooms' in referer:
+        return redirect('admin_live_rooms')
+    if 'marketplace' in referer:
+        return redirect('admin_marketplace')
+    return redirect('live_bargaining', product_id=product.product_id)
 
 
 def admin_wallet_view(request):
@@ -1232,8 +1282,12 @@ def farmer_edit_product_view(request, product_id):
     product = get_object_or_404(Product, product_id=product_id, farmer=farmer)
     market_settings = MarketSettings.get_settings()
 
-    if product.status == 'SOLD':
-        messages.error(request, "Sold products cannot be edited.")
+    if market_settings.status != 'OPEN' or market_settings.product_registration_status != 'OPEN':
+        messages.error(request, "Product editing is closed because product adding has been stopped by the Administrator.")
+        return redirect('farmer_products')
+
+    if product.status != 'AVAILABLE':
+        messages.error(request, f"Cannot edit product '{product.product_name}' because it is already {product.status.lower()}.")
         return redirect('farmer_products')
 
     if request.method == 'POST':
@@ -1264,13 +1318,19 @@ def farmer_delete_product_view(request, product_id):
         return redirect('login')
 
     product = get_object_or_404(Product, product_id=product_id, farmer=farmer)
-    if product.status == 'SOLD':
-        messages.error(request, "Cannot delete a product that is already sold.")
-    else:
-        pname = product.product_name
-        product.delete()
-        messages.success(request, f"Product '{pname}' deleted successfully.")
+    market_settings = MarketSettings.get_settings()
 
+    if market_settings.status != 'OPEN' or market_settings.product_registration_status != 'OPEN':
+        messages.error(request, "Product deletion is closed because product adding has been stopped by the Administrator.")
+        return redirect('farmer_products')
+
+    if product.status != 'AVAILABLE':
+        messages.error(request, f"Cannot delete product '{product.product_name}' because it is already {product.status.lower()}.")
+        return redirect('farmer_products')
+
+    pname = product.product_name
+    product.delete()
+    messages.success(request, f"Product '{pname}' deleted successfully.")
     return redirect('farmer_products')
 
 
@@ -1496,8 +1556,8 @@ def api_place_bid_view(request, product_id):
     if farmer and product.farmer == farmer:
         return JsonResponse({'error': 'You cannot bid on your own product.'}, status=400)
 
-    if product.status == 'SOLD':
-        return JsonResponse({'error': 'This product has already been sold.'}, status=400)
+    if product.status != 'AVAILABLE':
+        return JsonResponse({'error': f'This product is {product.status.lower()} and no longer accepts bids.'}, status=400)
 
     try:
         raw_bid = request.POST.get('bid_price_per_unit', '').strip()

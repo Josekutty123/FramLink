@@ -70,9 +70,19 @@
                                 {% endif %}
                             </td>
                             <td>
-                                <a href="{% url 'live_bargaining' data.product.product_id %}" class="btn btn-sm btn-outline-success">
-                                    <i class="bi bi-eye"></i> Monitor Room
-                                </a>
+                                <div class="d-flex gap-2">
+                                    <a href="{% url 'live_bargaining' data.product.product_id %}" class="btn btn-sm btn-outline-success">
+                                        <i class="bi bi-eye"></i> Monitor Room
+                                    </a>
+                                    {% if data.product.status == 'AVAILABLE' %}
+                                        <a href="{% url 'admin_close_product_bargaining' data.product.product_id %}" 
+                                           class="btn btn-sm btn-outline-danger"
+                                           title="Close Bargaining for this Product"
+                                           onclick="return confirm('Are you sure you want to close bargaining for this product? If no bids, it will be marked as UNSOLD.');">
+                                            <i class="bi bi-stop-circle"></i> Close
+                                        </a>
+                                    {% endif %}
+                                </div>
                             </td>
                         </tr>
                         {% empty %}

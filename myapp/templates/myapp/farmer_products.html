@@ -14,10 +14,14 @@
             <p class="text-muted mb-0">Manage your agricultural products listed for live marketplace bargaining.</p>
         </div>
         <div class="d-flex gap-2 align-items-center mt-3 mt-md-0">
-            {% if market_settings.status == 'OPEN' %}
+            {% if market_settings.status == 'OPEN' and market_settings.product_registration_status == 'OPEN' %}
                 <a href="{% url 'farmer_add_product' %}" class="btn btn-success shadow-sm rounded-pill px-4">
                     <i class="bi bi-plus-circle-fill me-1"></i> Add Product
                 </a>
+            {% elif market_settings.status == 'OPEN' %}
+                <button class="btn btn-secondary shadow-sm rounded-pill px-4" disabled title="Product adding has been stopped by Administrator">
+                    <i class="bi bi-lock-fill me-1"></i> Product Adding Stopped
+                </button>
             {% else %}
                 <button class="btn btn-secondary shadow-sm rounded-pill px-4" disabled title="Market is currently closed">
                     <i class="bi bi-lock-fill me-1"></i> Market Closed
@@ -35,11 +39,19 @@
                 <p class="mb-0 small">The marketplace is currently closed. Please wait until the Administrator opens the market to add new products.</p>
             </div>
         </div>
+    {% elif market_settings.product_registration_status != 'OPEN' %}
+        <div class="alert alert-info border-info rounded-4 shadow-sm mb-4 d-flex align-items-center p-3" role="alert">
+            <i class="bi bi-info-circle-fill fs-3 text-info me-3"></i>
+            <div>
+                <h6 class="fw-bold mb-1">Product Adding Stopped</h6>
+                <p class="mb-0 small">The Administrator has closed product additions and edits for this session. Products can no longer be edited or deleted.</p>
+            </div>
+        </div>
     {% else %}
         <div class="alert alert-success border-success bg-success bg-opacity-10 rounded-4 shadow-sm mb-4 d-flex align-items-center p-3" role="alert">
             <i class="bi bi-check-circle-fill fs-3 text-success me-3"></i>
             <div>
-                <h6 class="fw-bold mb-1 text-success">Marketplace is OPEN</h6>
+                <h6 class="fw-bold mb-1 text-success">Product Registration is OPEN</h6>
                 <p class="mb-0 small text-success-emphasis">You can now add products and manage your live bargaining rooms.</p>
             </div>
         </div>
@@ -95,6 +107,8 @@
                                     <td>
                                         {% if p.status == 'AVAILABLE' %}
                                             <span class="badge bg-success rounded-pill px-3">AVAILABLE</span>
+                                        {% elif p.status == 'UNSOLD' %}
+                                            <span class="badge bg-danger rounded-pill px-3">UNSOLD</span>
                                         {% else %}
                                             <span class="badge bg-secondary rounded-pill px-3">SOLD</span>
                                         {% endif %}
@@ -104,7 +118,7 @@
                                             <a href="{% url 'live_bargaining' p.product_id %}" class="btn btn-sm btn-success rounded-pill px-3" title="View Bargaining Room">
                                                 <i class="bi bi-body-text me-1"></i> Live Room
                                             </a>
-                                            {% if p.status != 'SOLD' %}
+                                            {% if market_settings.status == 'OPEN' and market_settings.product_registration_status == 'OPEN' and p.status == 'AVAILABLE' %}
                                                 <a href="{% url 'farmer_edit_product' p.product_id %}" class="btn btn-sm btn-outline-primary rounded-pill px-2" title="Edit">
                                                     <i class="bi bi-pencil-fill"></i>
                                                 </a>
